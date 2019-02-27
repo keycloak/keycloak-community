@@ -1,4 +1,4 @@
-# W3C Web Authnetication - Two-Factor
+# W3C Web Authentication - Two-Factor
 
 * **Status**: Draft
 * **Author**: [stianst](https://github.com/stianst)
