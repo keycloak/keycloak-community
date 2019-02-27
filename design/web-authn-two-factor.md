@@ -1,6 +1,6 @@
 # W3C Web Authnetication - Two-Factor
 
-* **Status**: Research
+* **Status**: Draft
 * **Author**: [stianst](https://github.com/stianst)
 * **EPIC**: [KEYCLOAK-7159](https://issues.jboss.org/browse/KEYCLOAK-7159)
 
