@@ -2,7 +2,7 @@
 
 * **Status**: Draft
 * **Author**: [stianst](https://github.com/stianst)
-* **Epic**: [KEYCLOAK-7159](https://issues.jboss.org/browse/KEYCLOAK-7159)
+* **JIRA**: [KEYCLOAK-7159](https://issues.jboss.org/browse/KEYCLOAK-7159)
 
 
 ## Motivation
