@@ -98,3 +98,8 @@ new Account Console.
  We can not require the client to include a bearer token either as the auth endpoint is invoked with a web browser
  redirect which does not allow for adding the bearer token as a header and we do not want to include a bearer token
  as a query parameter.  
+ 
+ 
+ ## Require Re-Authentication
+ 
+ It would also be nice to allow an Application Initiated Action to require users to re-authenticate if they are already authenticated. Example for an action where this would be applicable is updating the password.
