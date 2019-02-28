@@ -7,7 +7,7 @@
 
 ## Motivation
 
-W3C Web Authentication or WebAutn for short is getting a lot of attention lately and it is becoming more and more 
+W3C Web Authentication or WebAuthn for short is getting a lot of attention lately and it is becoming more and more 
 important that Keycloak provides support for WebAuthn.
 
 WebAuthn can provide stronger authentication than tradditional authentication mechanisms like password and OTP. It is
