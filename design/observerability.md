@@ -39,11 +39,16 @@ Health endpoint is enabled by default in WildFly 16 at:
 
 * http://localhost:9990/health
 
+WildFly implements the [MicroProfile Health](https://microprofile.io/project/eclipse/microprofile-health) specification. 
+
 ### Metrics
 
 Metrics endpoint is enabled by default in WildFly 16 at:
 
 * http://localhost:9990/metrics
+
+WildFly implements the [MicroProfile Metrics](https://microprofile.io/project/eclipse/microprofile-metrics) specification. 
+Metrics can be exposed in Prometheus or JSON format. 
 
 By default only metrics for the base (JVM) is available. Further metrics can be enabled with `-Dwildfly.statistics-enabled=true`, 
 which will enable statistics for all subsystems that support it. It is also possible to enable statistics for specific
