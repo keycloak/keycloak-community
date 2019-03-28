@@ -119,3 +119,4 @@ When parameters are passed as query parameters there is a risk that they are log
 * Logs should not include details like this and/or kept secure
 * The ID token is short lived
 * The ID token can not usually be used even if obtained. This is due to the fact that applications do only receive ID tokens directly from Keycloak to authenticate users and don't accept them from other sources. Applications that for some reason do accept these for examples from a cookie in case rhe application is stateless should not pass the ID token as a query parameter. They can instead use post based flows.
+* Keycloak will only skip the consent if the ID token is associated with the current session for the user. This further means the ID token can only be used on the same machine that it was issued for, which again reduces the risk of an ID token being missused if somehow obtained.
