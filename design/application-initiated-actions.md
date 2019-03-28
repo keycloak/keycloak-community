@@ -110,3 +110,12 @@ Application Initated Actions can be broken into 3 implementation phases:
 2. Support required actions that do not always prompt the user prior to making any changes (`InitiatedActionSupport.CONSENT_REQUIRED`).
 
 3. Support required actions that do require re-authentication.
+
+
+# Notes on id_token_hint
+
+When parameters are passed as query parameters there is a risk that they are logged in the web servers logs. This is not an issue as it is mitigated by:
+
+* Logs should not include details like this and/or kept secure
+* The ID token is short lived
+* The ID token can't be directly used even if it is somehow obtained. This is because applications do not receive ID tokens in request to provide access, but rather obtain these directly from Keycloak to authenticate the user.
