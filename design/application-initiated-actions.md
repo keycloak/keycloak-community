@@ -116,7 +116,8 @@ Application Initated Actions can be broken into 3 implementation phases:
 
 When parameters are passed as query parameters there is a risk that they are logged in the web servers logs. This is not an issue as it is mitigated by:
 
-* https is required and query parameters are encrypted with https
+* id_token_hint is already an established parameter in OpenID Connect, which should mean it is safe to use 
+* HTTPS is required and query parameters are encrypted with https
 * Logs should not include details like this and/or kept secure
 * The ID token is short lived
 * The ID token can not usually be used even if obtained. This is due to the fact that applications do only receive ID tokens directly from Keycloak to authenticate users and don't accept them from other sources. Applications that for some reason do accept these for examples from a cookie in case rhe application is stateless should not pass the ID token as a query parameter. They can instead use post based flows.
