@@ -65,10 +65,10 @@ By respecting this principle, we expect developers to provide more concise and c
 In Keycloak, we choose to stick with the following convention for resource paths:
 
 ```
-/realms/{realm}/apis/{API_GROUP}/{version}
+/{realm}/apis/{API_GROUP}/{version}
 ```
 
-Keycloak APIs usually operate in the context of a realm, the resource path should be prefixed with `/realms/{realm}` where `realm` maps to the the name of an existing realm.
+Keycloak APIs usually operate in the context of a realm, the resource path should be prefixed with `/{realm}` where `realm` maps to the the name of an existing realm.
 
 In Keycloak, a realm represents a tenant from where all the configuration is done. By operating in the context of a specific realm, APIs should always consider the realm specified in the path when performing any operation.
 
@@ -81,7 +81,7 @@ By including the group in the resource path, we aim to provide a clear and consi
 Here is an example of a resource path related with the group of functionalities provided by the Account Management REST API:
 
 ```
-/realms/{realm}/apis/accounts/v1/{user_id}
+/{realm}/apis/accounts/v1/{user_id}
 ```
 
 The path refers to the `accounts` group and any resource/operation related with user account management (in this case for user with id `user_id`) can be accessed from that path.
@@ -94,12 +94,18 @@ Group names should be in lowercase and a single word name.
 Under some circunstances, the group can be a compound name. This is the case when APIs are logically related with a common group. For instance, APIs related with the Keycloak Admin API are grouped under:
 
 ```
-/realms/{realm}/apis/admin/users/v1/{user_id}
+/{realm}/apis/admin/users/v1/{user_id}
 ```
 
 The usage of compound names in groups should consider whether or not makes sense to group the API into a logical group. Taking again the Admin API example, the reasoning for using a compound name is to make easier to restrict access to administration related APIs using a Web Application Firewall.
 
 In general, try to stick with single word names for groups.
+
+##### Reserved Group Names
+
+When choosing a group name you should avoid using reserver names such as `apis` or names that conflict fully or partially to any existing group.
+
+As a recommendation for users of Keycloak, realm names should also take these considerations into account otherwise they may end up with a very odd resource path definition.
 
 #### Versioning
 
@@ -110,7 +116,7 @@ The `version` refers to the stability and the state of an API. The version does 
 Here is an example of a resource path related with the group of functionalities provided by the Account Management REST API:
 
 ```
-/realms/{realm}/apis/accounts/v1/{user_id}
+/{realm}/apis/accounts/v1/{user_id}
 ```
 
 From the example above we can infer that the path refers to a specific `v1` version with the possibility to change the version and: 
@@ -126,7 +132,7 @@ From the example above we can infer that the path refers to a specific `v1` vers
 To better accommodate and separate the core API from extensions built on top of the API, developers should consider the following path format for extensions:
 
 ```
-/realms/{realm}/apis/{API_GROUP}/extensions/{extension_id}/{version}
+/{realm}/apis/{API_GROUP}/extensions/{extension_id}/{version}
 ```
 
 This separation aims to avoid confusion when consuming stable and official Keycloak APIs so that clients can differentiate if they are using some API provided by a third-party with no support from Keycloak team.
@@ -134,7 +140,7 @@ This separation aims to avoid confusion when consuming stable and official Keycl
 When the extension does not fit into any of the existing API groups, it should be possible to use a path with the following format:
 
 ```
-/realms/{realm}/apis/extensions/{extension_id}/{version}
+/{realm}/apis/extensions/{extension_id}/{version}
 ```
 
 #### Technology Preview
@@ -142,7 +148,7 @@ When the extension does not fit into any of the existing API groups, it should b
 To better accommodate and separate the core API from technology preview features, developers should use a path format as follows:
 
 ```
-/realms/{realm}/apis/{API_GROUP}/{version}/preview/{preview_id}
+/{realm}/apis/{API_GROUP}/{version}/preview/{preview_id}
 ```
 
 Technology preview APIs are related with features that have great potential to become fully supported. They provide the latest work in some area of interest and are offered with the intent to gather feedback from the community about new functionalities. However, such functionalities can be remove at any moment and break existing clients consuming the API.
@@ -150,7 +156,7 @@ Technology preview APIs are related with features that have great potential to b
 When the API does not fit into any of the existing API groups, it should be possible to use a path with the following format:
 
 ```
-/realms/{realm}/apis/preview/{preview_id}
+/{realm}/apis/preview/{preview_id}
 ```
 
 #### Store Resources
@@ -158,7 +164,7 @@ When the API does not fit into any of the existing API groups, it should be poss
 A resource store provides operations for a given resource. For example:
 
 ```
-/realms/{realm}/apis/accounts/v1/1234/applications
+/{realm}/apis/accounts/v1/1234/applications
 ```
 
 The example above is representing a resource store path from where we can manage the `applications` for a user account with ID `1234`. Based on this path, clients can perform different operations based on the HTTP verbs or any controller resource defined to the store. Usually this type of resource is associated with CRUD operations for a specific resource.
@@ -171,7 +177,7 @@ Under some circumstances, the HTTP verbs are not enough to represent an operatio
 the resource path may indicate a specific action to be taken when accessed.
 
 ```
-POST /realms/{realm}/accounts/v1/disable HTTP/1.1
+POST /{realm}/accounts/v1/disable HTTP/1.1
 Host: keycloak.org
 ```
 
@@ -280,7 +286,7 @@ to the resource that was created:
 ```
 HTTP/1.1 201 Created
 Content-Length: 0
-Location: http://mykeycloak.com/realms/{realms}/apis/users/{version}/1234
+Location: http://mykeycloak.com/{realms}/apis/users/{version}/1234
 ```
 
 ##### Expected Status Codes
@@ -424,5 +430,5 @@ The following example demonstrates how a Users API would look and how CRUD opera
 
 |Resource Path|GET|POST|PUT|DELETE|
 |---|---|---|---|---|
-|/realms/{realm}/apis/users/v1|List all users in the realm `acme`|Creates an user in the realm `acme`|Not Supported|Not Supported|
-|/realms/{realm}/apis/users/v1/123|Gets a representation for user with id `123`|Not Supported|Updates the user with id `123`|Deletes the user with id `123`|
+|/{realm}/apis/admin/users/v1|List all users in the realm `acme`|Creates an user in the realm `acme`|Not Supported|Not Supported|
+|/{realm}/apis/admin/users/v1/123|Gets a representation for user with id `123`|Not Supported|Updates the user with id `123`|Deletes the user with id `123`|
