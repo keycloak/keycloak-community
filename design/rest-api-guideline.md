@@ -56,7 +56,9 @@ This section defines the general principles that should be considered by API dev
 
 Based on [Richardson Maturity Model](https://martinfowler.com/articles/richardsonMaturityModel.html), developers MUST adhere to the maturity Level 2, where interactions with the API endpoints are based on the usage of HTTP Verbs and status codes to communicate status and errors.
 
-With this principle in mind, APIs should leverage the [HTTP Verbs](#http-verbs) defined in this guideline and respect their meaning, as well as use [HTTP Status Codes](#http-status-codes) in responses to communicate the success and failures when processing a request. For more details about the supported HTTP Verbs and Status Codes, see their respective sections in this document.
+With this principle in mind, APIs should leverage the [HTTP Verbs](#http-verbs) defined in this guideline and respect their meaning, idempotency as well as use [HTTP Status Codes](#http-status-codes) in responses to communicate the success and failures when processing a request. For more details about the supported HTTP Verbs and Status Codes, see their respective sections in this document.
+
+By respecting this principle, we expect developers to provide more concise and consistent APIs with a uniform interface. 
 
 ### Resource Path
 
@@ -67,6 +69,8 @@ In Keycloak, we choose to stick with the following convention for resource paths
 ```
 
 Keycloak APIs usually operate in the context of a realm, the resource path should be prefixed with `/realms/{realm}` where `realm` maps to the the name of an existing realm.
+
+In Keycloak, a realm represents a tenant from where all the configuration is done. By operating in the context of a specific realm, APIs should always consider the realm specified in the path when performing any operation.
 
 #### Group
 
@@ -84,6 +88,18 @@ The path refers to the `accounts` group and any resource/operation related with 
 Note that by grouping functionalities together and in conjunction with the versioning schema, we can keep the root path and also the semantics of the API without impact the adaptability for new changes or improvements to the API.
 
 Group names should be in lowercase and a single word name.
+
+##### Compound Group Names
+
+Under some circunstances, the group can be a compound name. This is the case when APIs are logically related with a common group. For instance, APIs related with the Keycloak Admin API are grouped under:
+
+```
+/realms/{realm}/apis/admin/users/v1/{user_id}
+```
+
+The usage of compound names in groups should consider whether or not makes sense to group the API into a logical group. Taking again the Admin API example, the reasoning for using a compound name is to make easier to restrict access to administration related APIs using a Web Application Firewall.
+
+In general, try to stick with single word names for groups.
 
 #### Versioning
 
