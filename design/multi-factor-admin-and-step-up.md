@@ -580,3 +580,34 @@ And for SAML:
 * [SAML V2.0 Identity Assurance Profiles](http://docs.oasis-open.org/security/saml/Post2.0/sstc-saml-assurance-profile.html)
 * Handling of the `<RequestedAuthnContext>` element and of the `ForceAuthn` parameter
 as described in the [SAML core](https://docs.oasis-open.org/security/saml/v2.0/saml-core-2.0-os.pdf).
+
+## Appendix
+
+### Authentication examples
+
+Below are a list of example authentication of users. A realm can support multiple alternatives, where a user can choose one as the default, but also have other alternatives configured. It is important that the changes to authentication flow takes into account current and future approaches for authentication in order to not have to be re-designed again in the future.
+
+Authentication mechanisms:
+
+* Password
+* PIN
+* Software OTP
+* Hardware OTP 
+* SMS
+* Email
+* WebAuthn
+* Printed backup codes
+* Kerberos
+* Identity Provider (OIDC, SAML and Social)
+* Cookie
+* Device identification
+* Push notification to mobile app
+* External
+
+The above can be used as a single factor, or combined to achieve N factors. A single authentication mechanism in Keycloak can also provide multiple factors on its own. Example of the latter could be a WebAuthn device that requires user fingerprint or pin to unlock, or an external authenticator.
+
+The authentication mechanisms can be combined in different combinations. Examples include:
+
+* Password and Software OTP
+* WebAuthn (multiple factors built-in to device)
+* WebAuthn and PIN
