@@ -64,3 +64,8 @@ In addition custom providers such as user storage providers may also add additio
  
  Client credentials, user credentials and external tokens may not be suitable to store in a vault due to the high number
  of such items. It may be better to encrypt these within the database.
+ 
+ 
+ # Per-type configuration?
+ 
+ It may be beneficial to allow per-type configuration. For example retrieving LDAP and SMTP credentials from Kubernetes secrets, while using HashiCorp Vault Transit Secrets for external tokens and not encrypting user secrets like otp secrets. That would allow more flexiblity as well as tuning security vs performance.
