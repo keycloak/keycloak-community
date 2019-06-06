@@ -267,7 +267,6 @@ It is expected that APIs responding to HTTP `GET` requests respect the following
 |Status Codes|
 |---|
 |200|
-|204|
 |307|
 |400|
 |401|
