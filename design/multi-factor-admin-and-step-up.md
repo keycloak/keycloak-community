@@ -1,6 +1,6 @@
 # Managing multi-factor authentication and Step-up authentication in Keycloak
 
-* **Status**: Draft
+* **Status**: Draft #2
 * **Author**: [Alistair Doswald](https://github.com/AlistairDoswald)
 * **JIRAs**: [KEYCLOAK-9693](https://issues.jboss.org/browse/KEYCLOAK-9693), [KEYCLOAK-9694](https://issues.jboss.org/browse/KEYCLOAK-9694) and [KEYCLOAK-847](https://issues.jboss.org/browse/KEYCLOAK-847)
 
