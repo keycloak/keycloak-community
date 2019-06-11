@@ -45,6 +45,8 @@ Although the guideline is based on the REST architectural style, it does not try
     - [Error Handling](#error-handling)
     - [Filtering](#filtering)
     - [Pagination](#pagination)
+    - [Concurrency Control and Consistency](#concurrency-control-and-concurrency)
+    - [Rate Limiting](#rate-lmiting)
     - [Documentation](#documentation)
   - [Examples](#examples)
 
@@ -414,6 +416,14 @@ When processing error responses, developers should look the error codes being us
 TODO
 
 ### Pagination
+
+TODO
+
+### Concurrency Control and Concurrency
+
+TODO
+
+### Rate Lmiting
 
 TODO
 
