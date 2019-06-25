@@ -38,23 +38,23 @@ As mentioned in [**W3C Web Authentication - Two-Factor**](https://github.com/key
 
 This design documents depends on the following two design documents:
 
-1. [**Application Initialted Actions**](https://github.com/keycloak/keycloak-community/blob/master/design/application-initiated-actions.md)
+1. [**Application Initialted Actions (AIA)**](https://github.com/keycloak/keycloak-community/blob/master/design/application-initiated-actions.md)
 
 It relates to how a user registers their public key credential on keycloak.
 
-Before realizing [**Application Initialted Actions**](https://github.com/keycloak/keycloak-community/blob/master/design/application-initiated-actions.md), an existing user having their user account can only register their public key credential in [User Account Service](https://www.keycloak.org/docs/latest/server_admin/index.html#_account-service).
+Before realizing AIA, the user can register their own public key credential at their login time by Required Action.
 
-After realizing [**Application Initialted Actions**](https://github.com/keycloak/keycloak-community/blob/master/design/application-initiated-actions.md), an existing user having their user account can also register their public key credential by Application Initiated Actions.
+After realizing AIA, the user can also do it by AIA that [User Account Service](https://www.keycloak.org/docs/latest/server_admin/index.html#_account-service) also use it.
 
-2. [**Managing multi-factor authentication and Step-up authentication in Keycloak**](https://github.com/AlistairDoswald/keycloak-community/blob/multi-factor/design/multi-factor-admin-and-step-up.md)
+2. [**Managing multi-factor authentication and Step-up authentication in Keycloak**](https://github.com/keycloak/keycloak-community/blob/master/design/multi-factor-admin-and-step-up.md)
 
 One point of its work is to realize multiple credentials management per user. Therefore, it relates to how many public key credentals a user can manages on keycloak.
 
-Before realizing [**Managing multi-factor authentication and Step-up authentication in Keycloak**](https://github.com/AlistairDoswald/keycloak-community/blob/multi-factor/design/multi-factor-admin-and-step-up.md), a user can manage single public key credential on keycloak.
+Before realizing Managing multi-factor authentication and Step-up authentication in Keycloak, a user can manage single public key credential on keycloak. Please note that this single public key credential support is tentative and omitted afterward.
 
-After realizing [**Managing multi-factor authentication and Step-up authentication in Keycloak**](https://github.com/AlistairDoswald/keycloak-community/blob/multi-factor/design/multi-factor-admin-and-step-up.md), a user can manage multiple public key credentials on keycloak.
+After realizing Managing multi-factor authentication and Step-up authentication in Keycloak, a user can manage multiple public key credentials on keycloak.
 
-It might be possible to support multiple public key credentials per user before realizing [**Managing multi-factor authentication and Step-up authentication in Keycloak**](https://github.com/AlistairDoswald/keycloak-community/blob/multi-factor/design/multi-factor-admin-and-step-up.md). However, I'm afraid that this design and [**Managing multi-factor authentication and Step-up authentication in Keycloak**](https://github.com/AlistairDoswald/keycloak-community/blob/multi-factor/design/multi-factor-admin-and-step-up.md) do the same thing for refactoring credential management in keycloak. To avoid this situation, this design itself does not treat how to realize managing multiple public key credentials per user.
+It might be possible to support multiple public key credentials per user before realizing Managing multi-factor authentication and Step-up authentication in Keycloak. However, I'm afraid that this design and that do the same thing for refactoring credential management in keycloak. To avoid this situation, this design itself does not treat how to realize managing multiple public key credentials per user.
 
 ## Implementation Plan
 ***
@@ -62,20 +62,18 @@ It might be possible to support multiple public key credentials per user before 
 The [WebAuthn API specification](https://www.w3.org/TR/webauthn/) covers broader areas, and this design is affected by other design documents explained just above. Therefore, I'll start by minimun support.
 
 * Support for minimum WebAuthn Registration/Authentication feature - satisfying [KEYCLOAK-9360](https://issues.jboss.org/browse/KEYCLOAK-9360) acceptance criteria
-    - Not considering [**Application Initialted Actions**](https://github.com/keycloak/keycloak-community/blob/master/design/application-initiated-actions.md)
-        - An existing user having their user account can only register their public key credential in User Account Service.
-    - Not considering [**Managing multi-factor authentication and Step-up authentication in Keycloak**](https://github.com/AlistairDoswald/keycloak-community/blob/multi-factor/design/multi-factor-admin-and-step-up.md) 
+    - Not considering [**AIA**](https://github.com/keycloak/keycloak-community/blob/master/design/application-initiated-actions.md)
+        - The user can register their own public key credential at their login time by Required Action.
+    - Not considering [**Managing multi-factor authentication and Step-up authentication in Keycloak**](https://github.com/keycloak/keycloak-community/blob/master/design/multi-factor-admin-and-step-up.md) 
         - Single public key credential per user
      - Not support attestation Statement verification
      - Not support authenticator metadata aquisition from external sources
 
 After that, I'll gradually implement additional features step by step. I'll consider the following implementation steps:
 
-* Support for public key credential registration by Application Initialted Actions after realizing [**Application Initialted Actions**](https://github.com/keycloak/keycloak-community/blob/master/design/application-initiated-actions.md)
-      - An existing user having their user account can also register their public key credential by Application Initiated Actions.
+* Support for public key credential registration by User Account Service after realizing AIA
 
-* Support for Multiple Public Key Credentials per User Account after realizing [**Managing multi-factor authentication and Step-up authentication in Keycloak**](https://github.com/AlistairDoswald/keycloak-community/blob/multi-factor/design/multi-factor-admin-and-step-up.md)
-      - Multiple public key credential per user
+* Support for Multiple Public Key Credentials per User Account after realizing Managing multi-factor authentication and Step-up authentication in Keycloak
 
 * Support attestation statement verification
 
@@ -88,9 +86,9 @@ In the [WebAuthn API specification](https://www.w3.org/TR/webauthn/), a user's c
 
 ### How Many Public Key Credential a User Can Manage
 
-At first, a user can manage only single public key credential.
+At first, a user can manage only single public key credential. Please note that this single public key credential support is tentative and omitted afterward.
 
-After realizing [**Managing multi-factor authentication and Step-up authentication in Keycloak**](https://github.com/AlistairDoswald/keycloak-community/blob/multi-factor/design/multi-factor-admin-and-step-up.md) , the user can manage several public key credentials.
+After realizing [**Managing multi-factor authentication and Step-up authentication in Keycloak**](https://github.com/keycloak/keycloak-community/blob/master/design/multi-factor-admin-and-step-up.md) , the user can manage several public key credentials.
 
 ### Managed Information on Public Key Credential
 
@@ -154,9 +152,9 @@ An user without having their user account in keycloak:
 
 An existing user having their user account in keycloak:
 
-* They can register their public key credential in [User Account Service](https://www.keycloak.org/docs/latest/server_admin/index.html#_account-service).
+* They can register their own public key credential at their login time by Required Action.
 
-* After realizing [**Application Initialted Actions**](https://github.com/keycloak/keycloak-community/blob/master/design/application-initiated-actions.md), they can register their public key credential by Application Initiated Actions
+* After realizing [**AIA**](https://github.com/keycloak/keycloak-community/blob/master/design/application-initiated-actions.md), the user can register their own public key credential it by AIA that User Account Service also use it.
 
 ### Registered Public Key Credential's Metadata
 
@@ -345,9 +343,7 @@ User Interface, Logging, Error Handling need to be considered.
 
 ### Management by user
 
-The user can manage their own public key credentials on [User Account Service](https://www.keycloak.org/docs/latest/server_admin/index.html#_account-service).
-
-After realizing Application Initiated Actions, the user can also manage their own public key credentials by [**Application Initialted Actions**](https://github.com/keycloak/keycloak-community/blob/master/design/application-initiated-actions.md).
+After realizing AIA, the user can also manage their own public key by [**AIA**](https://github.com/keycloak/keycloak-community/blob/master/design/application-initiated-actions.md) that User Account Service also use it.
 
 ### Management by administrator
 
