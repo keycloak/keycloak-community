@@ -70,11 +70,19 @@ Defines a front-channel logout mechanism that does not use an OP iframe on RP pa
 
 * [Keycloak JIRA](https://issues.jboss.org/browse/KEYCLOAK-2939)
 
+
 ### [OpenID Connect Back-Channel Logout](http://openid.net/specs/openid-connect-backchannel-1_0.html) (Draft)
 
 Defines a logout mechanism that uses direct back-channel communication between the OP and RPs being logged out.
 
 * [Keycloak JIRA](https://issues.jboss.org/browse/KEYCLOAK-2940)
+
+
+### [OpenID Connect Client Initiated Backchannel Authentication Flow](https://openid.net/specs/openid-client-initiated-backchannel-authentication-core-1_0.html) (Draft)
+
+Flows that decouple end-user authentication and consent from the initiating device. Similar to OAuth 2.0 Device Authorization Grant,
+but extends to more use-cases.
+
 
 ### [OpenID Connect Federation](http://openid.net/specs/openid-connect-federation-1_0.html) (Draft)
 
