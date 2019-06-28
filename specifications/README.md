@@ -68,11 +68,13 @@ for fintech use-cases.
 
 Defines a front-channel logout mechanism that does not use an OP iframe on RP pages.
 
+* [Keycloak JIRA](https://issues.jboss.org/browse/KEYCLOAK-2939)
 
 ### [OpenID Connect Back-Channel Logout](http://openid.net/specs/openid-connect-backchannel-1_0.html) (Draft)
 
 Defines a logout mechanism that uses direct back-channel communication between the OP and RPs being logged out.
 
+* [Keycloak JIRA](https://issues.jboss.org/browse/KEYCLOAK-2940)
 
 ### [OpenID Connect Federation](http://openid.net/specs/openid-connect-federation-1_0.html) (Draft)
 
@@ -80,6 +82,15 @@ Defines how sets of OPs and RPs can establish trust by utilizing a Federation Op
 
 
 ## OAuth
+
+
+### [OAuth 2.0 Device Authorization Grant](https://tools.ietf.org/html/draft-ietf-oauth-device-flow-15) (Draft)
+
+Flow that delegates authentication to a separate device. To be used with internet connected devices that themselves
+lack a browser or are input-constrained.
+
+* [Keycloak JIRA](https://issues.jboss.org/browse/KEYCLOAK-7675)
+* [Keycloak design proposal](https://github.com/keycloak/keycloak-community/pull/6)
 
 
 ### [OAuth 2.0 Multiple Response Types](http://openid.net/specs/oauth-v2-multiple-response-types-1_0.html) (Final)
