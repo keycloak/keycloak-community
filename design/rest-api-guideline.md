@@ -419,11 +419,11 @@ TODO
 
 TODO
 
-### Concurrency Control and Concurrency
+### Concurrency Control and Consistency
 
 TODO
 
-### Rate Lmiting
+### Rate Limiting
 
 Keycloak does not provide rate limiting capabilities and for such it is necessary to use a third-party tool such as a API Manager.
 
