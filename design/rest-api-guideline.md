@@ -153,7 +153,7 @@ To better accommodate and separate the core API from technology preview features
 /{realm}/apis/{API_GROUP}/{version}/preview/{preview_id}
 ```
 
-Technology preview APIs are related with features that have great potential to become fully supported. They provide the latest work in some area of interest and are offered with the intent to gather feedback from the community about new functionalities. However, such functionalities can be remove at any moment and break existing clients consuming the API.
+Technology preview APIs are related with features that have great potential to become fully supported. They provide the latest work in some area of interest and are offered with the intent to gather feedback from the community about new functionalities. However, such functionalities can be removed at any moment and break existing clients consuming the API.
 
 When the API does not fit into any of the existing API groups, it should be possible to use a path with the following format:
 
