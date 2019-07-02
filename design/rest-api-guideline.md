@@ -411,22 +411,54 @@ consider existing error codes before creating new ones.
 
 When processing error responses, developers should look the error codes being used by other APIs and see if they can be reused.
 
-### Filtering
-
-TODO
-
 ### Pagination
+
+When dealing with large data sets, [store resources](#store-resources) should consider paginating the results when fetching resource sets.
+
+In Keycloak, pagination is based on two request parameters:
+
+* `first`
+
+    The position of the first result to retrieve
+
+* `max`
+    
+    The maximum number of entries to retrieve
+
+These parameters should be sent along with a `GET` request as follows:
+
+```
+/{realm}/apis/admin/users/v1?first=1&max=20
+```
+
+The example above shows how to request the first page (entries from 1 to 20).
+
+As a result, the server should respond as follows:
+
+```
+HTTP/1.1 200 OK
+Connection: keep-alive
+Cache-Control: no-cache
+Content-Type: application/json
+Content-Length: 961
+Date: Wed, 22 May 2019 13:44:57 GMT
+
+Link: <http://{host}:{port}/auth/{realm}/apis/admin/users/v1?first=20&max=20>; rel="next"
+```
+
+As defined by [RFC-5988](https://tools.ietf.org/html/rfc5988), responses from the server should contain a `Link` header indicating whether or not there is a next page and, if there are more pages, a link that can be followed to fetch the next page. If the `Link` header is not present, the client can assume that there are no more pages to fetch.
+
+### Rate Limiting
+
+Keycloak does not provide rate limiting capabilities and for such it is necessary to use a third-party tool such as a API Manager.
+
+### Filtering
 
 TODO
 
 ### Concurrency Control and Consistency
 
 TODO
-
-### Rate Limiting
-
-Keycloak does not provide rate limiting capabilities and for such it is necessary to use a third-party tool such as a API Manager.
-
 
 ### Documentation
 
