@@ -86,7 +86,11 @@ In the [WebAuthn API specification](https://www.w3.org/TR/webauthn/), a user's c
 
 ### How Many Public Key Credential a User Can Manage
 
-At first, a user can manage only single public key credential. Please note that this single public key credential support is tentative and omitted afterward.
+At first implementation phase, a user can manage only single public key credential. Please note that this single public key credential support is tentative and omitted afterward.
+
+At first implementation phase, the features about Public Key Credential (e.g. credential selection on authentication) are implemented the same as the implementation phase when multiple credentials are supported in order that make it easy to work on later implementation phases (e.g. multiple credentials per user supported ).
+
+It seems to be odd for users that the features supposing multiple credentials are implemented at this first implementation phase. But this single public key credential is tentative and not officially supported later on.
 
 After realizing [**Managing multi-factor authentication and Step-up authentication in Keycloak**](https://github.com/keycloak/keycloak-community/blob/master/design/multi-factor-admin-and-step-up.md) , the user can manage several public key credentials.
 
@@ -172,22 +176,29 @@ This configuration is applied to all users using this provider. It suffice to sa
 
 #### Configuration Item - Signature Algorithm
 
-  - Multiple items can be selected.
+  - Item selection : Multiple items can be selected.
+  - UI : ComboBox that enables multiple item selection and have a blank item.
+    - If a user selects only the blank item, it means no algorithm is selected.
+    - If a user selects no items, it also means no algorithm is selected.
+    - If a user selects multiple items including the blank item, this blank item selection is ignored. 
   - Supported algorithms are the following : {ES256, ES384, ES512, RS1, RS256, RS384, RS512}
-  - Default setting is : {ES256}
+  - Default setting : a blank item selected
   - If no algorithm is selected, {ES256} is adapted.
 
 *Notes:*
 
 * These supported algorithms are supported ones in the WebAuthn protocol processing core library [webauthn4j](https://github.com/webauthn4j).
 * This setting is **required** for WebAuthn API (`navigator.credentials.create()`)
+* According to the rules just above, if a user select only a blank item or no items, it is equal to selecting only {ES256}.
 
 #### Configuration Item - Authenticator Attachment
 
-  - Have the switch (ON/OFF) to specify whether this configuration is used or not. Its default setting is OFF.
-  - Only single item can be selected.
+  - Item selection : Only single item can be selected.
+  - UI : ComboBox that enables single item selection and have a blank item.
+    - If a user selects only this blank item, that means this configuration is not used.
+    - If a user selects no items, it also means this configuration is not used.
   - Supported authenticator attachment options are the following : {platform, cross-platform}
-  - Default setting is : platform
+  - Default setting : a blank item selected that means this configuration is not used.
 
 *Notes:*
 
@@ -195,10 +206,12 @@ This configuration is applied to all users using this provider. It suffice to sa
 
 #### Configuration Item - Require Resident Key
 
-  - Have the switch (ON/OFF) to specify whether this configuration is used or not. Its default setting is OFF.
-  - Only single item can be selected.
+  - Item selection : Only single item can be selected.
+  - UI : ComboBox that enables single item selection and have a blank item.
+    - If a user selects only this blank item, that means this configuration is not used.
+    - If a user selects no items, it also means this configuration is not used.
   - Supported resident key options are the following : {Yes, No}
-  - Default setting is : No
+  - Default setting : a blank item selected that means this configuration is not used.
 
 *Notes:*
 
@@ -206,10 +219,12 @@ This configuration is applied to all users using this provider. It suffice to sa
 
 #### Configuration Item - User Verification Requirement
 
-  - Have the switch (ON/OFF) to specify whether this configuration is used or not. Its default setting is OFF.
-  - Only single item can be selected.
+  - Item selection : Only single item can be selected.
+  - UI : ComboBox that enables single item selection and have a blank item.
+    - If a user selects only this blank item, that means this configuration is not used.
+    - If a user selects no items, it also means this configuration is not used.
   - Supported user verification options are the following : {required, preferred, discouraged}
-  - Default setting is : preferred
+  - Default setting : a blank item selected that means this configuration is not used.
 
 *Notes:*
 
@@ -217,10 +232,12 @@ This configuration is applied to all users using this provider. It suffice to sa
 
 #### Configuration Item - Attestation Conveyance Preference
 
-  - Have the switch (ON/OFF) to specify whether this configuration is used or not. Its default setting is OFF.
-  - Only single item can be selected.
+  - Item selection : Only single item can be selected.
+  - UI : ComboBox that enables single item selection and have a blank item.
+    - If a user selects only this blank item, that means this configuration is not used.
+    - If a user selects no items, it also means this configuration is not used.
   - Supported attestation conveyance preference are the following : {none, indirect, direct}
-  - Default setting is : none
+ - Default setting : a blank item selected that means this configuration is not used.
 
 *Notes:*
 
@@ -289,10 +306,12 @@ This configuration is applied to all users using this provider. It suffice to sa
 
 #### Configuration Item - User Verification Requirement
 
-  - Have the switch (ON/OFF) to specify whether this configuration is used or not. Its default setting is OFF.
-  - Only single item can be selected.
+  - Item selection : Only single item can be selected.
+  - UI : ComboBox that enables single item selection and have a blank item.
+    - If a user selects only this blank item, that means this configuration is not used.
+    - If a user selects no items, it also means this configuration is not used.
   - Supported user verification options are the following : {required, preferred, discouraged}
-  - Default setting is : preferred
+ - Default setting : a blank item selected that means this configuration is not used.
 
 *Notes:*
 
@@ -307,6 +326,13 @@ On user authentication:
   * Keycloak shows the list of public key credentials with its metadata that the user has registered.
   * The user can select some of their public key credentials.
   * It is acceptable that the user selects no public key credentials.
+  
+  - Item selection : Multiple items can be selected.
+  - UI : ComboBox that enables multiple item selection and have a blank item.
+    - If a user selects only the blank item, it means no public key credentials is selected.
+    - If a user selects no items, it also means no public key credentials is selected.
+    - If a user selects multiple items including the blank item, this blank item selection is ignored. 
+  - Default setting : a blank item selected that means no public key credentials are specified.
 
 *Notes:*
 
