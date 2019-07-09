@@ -178,16 +178,18 @@ From the high level point of view, advanced approach would mean that "authentica
 ideally shared per whole browser - per all browser tabs. Client data are not tracked anymore in the authentication session on
 the server, but in the browser - either in the request parameters sent across all requests or per browser cookie.
 
-1. In addition to the AUTH_SESSION_ID cookie, we will introduce another cookie like AUTH_TIMESTAMP. Cookie will contain
-timestamp in the integer format. This cookie will be updated after every action triggered in the authenticators.
+1. Every page with the authenticators will contain some small JS code. This JS code will be activated when the particular browser tab is shown and gains focus.
+It may be possible to use the `onFocus` function on the body element for example:
+```
+<body onfocus="onFocus()">
+```
 
-2. Every page with the authenticators will contain some small JS code, which will periodically check the AUTH_TIMESTAMP cookie
-mentioned above. In case that it recognizes the change, the page will be automatically refreshed and moved to the latest state.
-For example if user confirms username/password in browser tab1, which moved to the TOTP screen, then tab2 will be moved in the
-background to the TOTP screen as well.
-In details, when javascript recognize the change in the timestamp cookie, then
+2. In case that focus is gained on the browser tab, the page will be automatically refreshed and moved to the latest state. For example if user confirms username/password
+in browser tab1, which moved to the TOTP screen, then tab2 will be moved in the background to the TOTP screen as well when it gains focus.
+In details, when javascript recognize the change in the focus, then
 tab2 will:
-    * Send the browser "refresh" request
+    * Send the browser "refresh" request. In the meantime, there can be some message on the screen like "Refreshing the page. Please wait", so user
+    is not tempted to fill username/password form, which is not valid anymore. Or it could be just a shading full screen div or whatever.
     
     * Authentication session will be shared per whole browser (with some exceptions described below in section [different flows in same browser](#different-flows-in-same-browser).
     So on KC side, we will check the latest state from AuthenticationSession and update the page accordingly including URLs. This will allow all browser tabs will be updated to TOTP after confirm username/password in tab1
@@ -205,11 +207,10 @@ tab2 will:
     in tab2, then he will be redirected to TOTP screen in tab2.
     
     * This also means that after authentication completed in tab1, KC redirects to the client application in particular tab as in
-    current Keycloak master. But in other browser tabs, there won't be immediate redirect to the applications in that case as this can have
-    some side-effects. For example unecessarily creating the HTTP session for the application where user was redirected in other browser tabs.
-    So in other browser tabs, we may display some "info" stating like "Authentication was completed. Redirecting to the
-    application in few seconds". There will be also some additional JS code, which will be triggered when user enters the particular browser tab. This JS
-    will refresh the page and will automatically redirect user to the application.
+    current Keycloak master. In that case, authentication session will be removed (See step 7 below). When tab2, which shared 
+    same authentication session, gains focus and the authentication session was already removed, it will start authentication from the
+     beginning and create new authentication session. This will in most cases do SSO login. So in most cases, user will be just directly redirected to the application
+     when particular browser tab2 gains focus.
 
 
 3. As mentioned above, the client data, which are specific to each browser tab, won't be saved in the authentication session
