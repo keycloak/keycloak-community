@@ -77,7 +77,7 @@ logout is currently removed after logout together with root authentication sessi
 ### KC_RESTART cookie
 
 KC_RESTART is the cookie, which is created at the beginning of the authentication flow (Step 1 above). It contains client
-informations encoded in the JWS token. The cookie is useful in case that root authentication session expires (Step 5 from
+informations encoded in the signed JWT token. The cookie is useful in case that root authentication session expires (Step 5 from
 above), it can be used to re-create the new authentication session from the client informations supplied in the cookie. But
 overally the cookie is not so useful as it contains informations just from single client and doesn't work properly with more
 browser tabs.
@@ -215,7 +215,7 @@ tab2 will:
 3. As mentioned above, the client data, which are specific to each browser tab, won't be saved in the authentication session
 anymore, but will be saved in the browser itself. This will be either in the request parameter sent across authentication requests or in the cookie, which will need to be "namespaced" to be specific per each browser tab. Few details to this:
     
-    * The client data will be encoded in the JWS token. It can be pretty similar to the current KC_RESTART cookie - in other words, some JSON data signed with the realm secret key.
+    * The client data will be encoded in the signed JWT. It can be pretty similar to the current KC_RESTART cookie - in other words, some JSON data signed with the realm secret key.
     
     * In ideal case, the token can be added as separate parameter to the authentication requests. In other words, instead of
     parameters `code`, `execution`, `client_data` and `tab_id`, we will have `code`, `execution`, `tab_id` and `client_data_full` where
@@ -229,7 +229,7 @@ anymore, but will be saved in the browser itself. This will be either in the req
     * In case that cookie fallback is used, we may need to use the parameters like `code`, `execution`, `tab_id`, `client_data` and `cookie_suffix` as
     before. The `cookie_suffix` will be used just as a namespace, so
     that every browser tab can have it's own cookie. In other words in case that tab1 will use `cookie_suffix=MNBVCXZ`, then there
-    will be cookie like CLIENT_DATA_MNBVCXZ containing the JWS for this particular tab. The `client_data` will be again
+    will be cookie like CLIENT_DATA_MNBVCXZ containing the signed JWT for this particular tab. The `client_data` will be again
     used just for the error purpose as cookie can be expired/removed in some cases, so we will redirect to the application
     with the error in that case as described in the [minimalistic design](#minimal-approach).
     
