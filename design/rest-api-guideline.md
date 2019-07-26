@@ -448,6 +448,13 @@ Link: <http://{host}:{port}/auth/{realm}/apis/admin/users/v1?first=20&max=20>; r
 
 As defined by [RFC-5988](https://tools.ietf.org/html/rfc5988), responses from the server should contain a `Link` header indicating whether or not there is a next page and, if there are more pages, a link that can be followed to fetch the next page. If the `Link` header is not present, the client can assume that there are no more pages to fetch.
 
+The possible links and `rel` values are:
+
+|Rel|Description|
+|---|---|
+|`next`|The link for the next page of results|
+|`prev`|The link for the previous page of results|
+
 ### Rate Limiting
 
 Keycloak does not provide rate limiting capabilities and for such it is necessary to use a third-party tool such as a API Manager.
