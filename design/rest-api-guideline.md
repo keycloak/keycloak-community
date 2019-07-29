@@ -458,25 +458,13 @@ Sometimes, we need more control over the content that will return from the serve
 
 The Keycloak admin REST API allows to search for users based on `e-mail`, `first name`, `lastname` and other optional parameters. However, such implementation is limited to a particular context (e.g, collection of users).
 
-Filtering can be implemented as a query parameter, like we already did for the current REST API, with some enhancements. To filter on a field, should be as simple as the following request:
+Filtering should be implemented as a query parameter, based on what we already do today. To filter on a field, should be as simple as the following request:
 
 ```
-/{realm}/apis/admin/users/v1?group=users1&realm=master&sort=desc
+/{realm}/apis/admin/users/v1?group=users1
 ```
 
-Multiple filters should result in an implicit `AND`, so in our example `/v1?group=users1&role=role1&realm=master&sort=desc` would provide results based on `groups`, `roles` and `realm`. Now let's say we want filter based on more than one groups:
-
-```
-/{realm}/apis/admin/users/v1?group=in:users1,users2&realm=master&sort=desc
-```
-
-A brief explanation about the parameters:
-
-|Name|Type|Description|
-|---|---|---|
-|sort|string|Sort the results on our query based on: date, ascending order and descending order|
-|in|string|Query for values inside a collection. For example: users belonging to group1 `and` group2.
-|or|string|Query for values inside a collection. For example: users belonging to group1 `or` group2.
+Multiple filters should result in an implicit `AND`, so in our example `/v1?group=users1&role=role1` would provide results based on `groups` and `roles`. Filtering should take into consideration the list of attributes supported by the API.
 
 ### Concurrency Control and Consistency
 
