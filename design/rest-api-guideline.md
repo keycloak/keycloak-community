@@ -454,7 +454,17 @@ Keycloak does not provide rate limiting capabilities and for such it is necessar
 
 ### Filtering
 
-TODO
+Sometimes, we need more control over the content that will return from the server, so that only a subset of the data is available in the response. For example, a list user's groups or permissions. 
+
+The Keycloak admin REST API allows to search for users based on `e-mail`, `first name`, `lastname` and other optional parameters. However, such implementation is limited to a particular context (e.g, collection of users).
+
+Filtering should be implemented as a query parameter, based on what we already do today. To filter on a field, should be as simple as the following request:
+
+```
+/{realm}/apis/admin/users/v1?group=users1
+```
+
+Multiple filters should result in an implicit `AND`, so in our example `/v1?group=users1&role=role1` would provide results based on `groups` and `roles`. Filtering should take into consideration the list of attributes supported by the API.
 
 ### Concurrency Control and Consistency
 
