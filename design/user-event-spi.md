@@ -40,11 +40,32 @@ before persisting any changes.
 
 Post-event is an event that is fired after a User Action has finished completely and all changes are persisted.
 
+### Event types
+
+* User is created manually through admin endpoints
+* Basic user info (name, email, etc.) is modified through admin endpoints
+* Basic user info (name, email, etc.) is modified through account endpoints
+* User self-registers through login page
+* User self-registers through an IdP, i.e. logs in for the first time
+* Admin adds a federation link
+* Admin removes a federation link
+* User logs in using federation for the first time
+* User is added to a group (through admin endpoints)
+* User is removed from a group (through admin endpoints)
+* User has a realm or client role assigned (through admin endpoints)
+* User has a realm or client role unassigned (through admin endpoints)
+* Admin updates a user's password through admin endpoints (not interactive)
+* User updates their password (not interactive)
+* User adds an authenticator
+* User removes an authenticator
+* Admin removes an authenticator from a user
+* User is deleted
+
 ### Interactive pre-events
 
 If a listener supports events interception, it needs to explicitly approve or reject each pre-event. This can be done
 either synchronously (the approve/reject decision is made right away by the listener), or the listener can signal that
-the decision is delegated for asynchronous processing.
+the decision is delegated for asynchronous processing. Notice that not all event types support interaction.
 
 **When an event is approved** the SPI doesn't interfere with the User Action in any way.
 
@@ -60,6 +81,61 @@ the decision is delegated for asynchronous processing.
 * The listener informs the external system that approval is required.
 * Later the external system approves or rejects the event. The SPI is then responsible for "resuming" the User Action
   in case it's approved.
+
+### Simplified code snippets
+
+Event listener:
+```java
+public class FooBarListener implements UserEventProvider {
+
+    ...
+
+    public void onPreEvent(UserPreEvent event) {
+        if (event instanceof UpdateBasicInfoUserPreEvent) {
+            UpdateBasicInfoUserPreEvent updateBasicInfoEvent = (UpdateBasicInfoUserEvent) event;
+            String current = updateBasicInfoEvent.getCurrent().getEmail();
+            String suggested = updateBasicInfoEvent.getSuggested().getEmail();
+            if (!current.equals(suggested)) {
+                String token = event.delegate("Email changes require admin approval");
+                startBPMSProcess(event, token);
+            }
+        }
+        else {
+            event.approve();
+        }
+    }
+
+    ...
+
+}
+```
+
+Fire event:
+```java
+public class UserResource {
+    ...
+
+    public Response updateUser(final UserRepresentation rep) {
+        try {
+            userEvents.updateBasicInfoPreEvent(user, rep);
+        }
+        catch (UserEventDelegated e) {
+            return ErrorResponse.delegated(e.getReason());
+        }
+        catch (UserEventRejected e) {
+            return ErrorResponse.rejected(e.getReason());
+        }
+
+        ...
+        // persist the changes
+        ...
+
+        userEvents.updateBasicInfoPostEvent(user).success();
+    }
+
+    ...
+}
+```
 
 #### Integration with Red Hat Process Automation Manager (former BPMS)
 
