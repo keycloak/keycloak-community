@@ -7,11 +7,11 @@ This repository contains community related information around Keycloak, includin
 
 ## Contents
 
-### [Proposals](design/README.md)
+### [Proposals](design)
 
 Proposals for larger new features to be added to Keycloak.
 
-### [Specfications](specifications/README.md)
+### [Specfications](specifications)
 
 Review of currently implemented specifications and specifications that should be considered.
 
