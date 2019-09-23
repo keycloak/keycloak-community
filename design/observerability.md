@@ -1,6 +1,6 @@
 # Observerability
 
-* **Status**: Research
+* **Status**: Notes
 * **JIRA**: [KEYCLOAK-8288](https://issues.jboss.org/browse/KEYCLOAK-8288)
 
 

@@ -1,6 +1,6 @@
 # Approvals System
 
-* **Status**: Research
+* **Status**: Notes
 * **JIRA**: [KEYCLOAK-8441](https://issues.jboss.org/browse/KEYCLOAK-8441)
 
 
