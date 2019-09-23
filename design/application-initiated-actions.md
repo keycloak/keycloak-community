@@ -1,7 +1,6 @@
 # Application Initiated Actions
 
-* **Status**: Final
-* **Author**: [stianst](https://github.com/stianst)
+* **Status**: Final #1
 * **JIRA**: [KEYCLOAK-9366](https://issues.jboss.org/browse/KEYCLOAK-9366)
 
 

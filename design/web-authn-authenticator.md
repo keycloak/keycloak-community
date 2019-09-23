@@ -1,7 +1,6 @@
 # W3C Web Authentication - Implementation stages - Authenticator only
 
-* **Status**: Draft
-* **Author**: [tnorimat](https://github.com/tnorimat)
+* **Status**: Draft #1
 * **JIRA**: [KEYCLOAK-9358](https://issues.jboss.org/browse/KEYCLOAK-9358), [KEYCLOAK-9359](https://issues.jboss.org/browse/KEYCLOAK-9359), [KEYCLOAK-9360](https://issues.jboss.org/browse/KEYCLOAK-9360)
 
 ## Motivation

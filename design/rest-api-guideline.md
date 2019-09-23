@@ -1,7 +1,6 @@
 # REST API Guideline
 
-* **Status**: Draft
-* **Author**: keycloak-team
+* **Status**: Draft #1
 * **JIRA**: [KEYCLOAK-9344](https://issues.jboss.org/browse/KEYCLOAK-9344)
 
 ## Abstract

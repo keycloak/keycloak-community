@@ -1,7 +1,6 @@
 # Approvals System
 
-* **Status**: PoC
-* **Author**: [vmuzikar](https://github.com/vmuzikar)
+* **Status**: Research
 * **JIRA**: [KEYCLOAK-8441](https://issues.jboss.org/browse/KEYCLOAK-8441)
 
 

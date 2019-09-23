@@ -1,7 +1,6 @@
 # OAuth 2.0 Device Authorization Grant
 
-* **Status**: Draft
-* **Author**: [wadahiro](https://github.com/wadahiro)
+* **Status**: Draft #1
 * **JIRA**: [KEYCLOAK-7675](https://issues.jboss.org/browse/KEYCLOAK-7675)
 
 

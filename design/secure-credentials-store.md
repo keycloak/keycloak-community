@@ -1,7 +1,6 @@
 # Secure Credentials Store - Vault SPI (Part I)
 
-* **Status**: Draft
-* **Author**: [stianst](https://github.com/stianst)
+* **Status**: Draft #1
 * **JIRA**: [KEYCLOAK-3205](https://issues.jboss.org/browse/KEYCLOAK-3205)
 
 ## Motivation
