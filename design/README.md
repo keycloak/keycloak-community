@@ -17,7 +17,7 @@ It should have the following heading:
     
 Status can be one of (in order of maturity):
 
-* Research - Research notes / PoC
+* Notes - Research notes / PoC / WIP
 * Draft #N - Initial proposal should be "Draft #1". For every major update to the proposal the version should be increased 
 * Final #N - Final means the implementation is completed and the proposal matches the implementation
 
