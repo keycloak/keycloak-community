@@ -68,13 +68,16 @@ The JSON document will consist of a list of user attributes, where each attribut
 * Required - ability to specify when the attribute is required, more below
 * Can the user view the attribute? Can the admin view the attribute?
 * Can the user edit the attribute? Can the admin edit the attribute?
-* Label to use when displayed in forms (to be discussed, see Dynamic Forms section)
-* UI order (to be discussed, see Dynamic Forms section)
-* Input type (to be discussed, see Dynamic Forms section)
+
+If it is decided to support dynamic forms (see Dynamic Forms section below) the following fields would also be required:
+
+* Label to use when displayed in forms
+* UI order
+* Input type
 
 Ability to specify when an attribute is required should be quite flexible to cover use-cases like:
 
-* Don't ask user for D.O.B. until a client requests the scope "dob"
+* Don't ask user for the users birthdate until a client requests the scope "birthdate"
 * Allow an admin to create an initial user with only specifying email, then requiring user to fill in first and last names on first login
 * Ask user for missing information after login with a social provider
 
@@ -82,12 +85,13 @@ A very rough idea on how the user profile JSON could look like:
 
     {
         "attributes": [{
-            "key": "department",
+            "name": "department",
             "view": ["admin", "user"],
             "edit": ["admin"],
             "requirement":"always",
             "validation": {
-                "regex":"[A-Za-z]{1,100}"
+                "name", 
+                { "length" : { "min" : 10, "max": 20 } }
             }
         }
     }
@@ -116,24 +120,33 @@ Built-in validators should cover:
 
 * Name
 * Email
-* Pattern
+* Pattern (regex)
 * Number, with min and max
 * Length, with min and max
+* URL
+* Date
+
+There will be a user attribute SPI allowing custom validators to be created.
 
 
 ## Built-in Attributes
 
-Keycloak should add more attributes out of the box. This means defining the standard key for the attribute as well as optionally rendering in forms.
+Keycloak should add more attributes out of the box than it does today. 
 
-The lists should be based on standard [claims from OpenID Connect Core](https://openid.net/specs/openid-connect-core-1_0.html#StandardClaims), but not covering all attributes at least not initially.
+This means defining the standard key for the attribute as well as optionally rendering in forms. Having standard names for attributes will further help on standardising and simplification of configuring Keycloak. Of course the attributes defined should be flexible and even though "birthdate" is used as a standard attribute name, that can be changed to dob if wanted by simply modifying the default profile.
+
+Standard attribute names will be based on [claims from OpenID Connect Core](https://openid.net/specs/openid-connect-core-1_0.html#StandardClaims), but we may not cover all attributes listed there at least initially. Especially attributes such as picture are problematic as the ideal experience is one where users are able to upload a picture through admin and account consoles rather than simply listing an externally managed URL.
 
 
 ## Dynamic Forms
 
 With regards to forms there is two options we can choose from:
 
-* Crafted forms - craft forms such as registration form, where fields are shown or hidden based on user profile. To add custom attributes the form would be extended.
-* Dynamic forms - add additional metadata to user profile attributes so forms can be dynamically generated.
+1. Crafted forms - craft forms such as registration form, where fields are shown or hidden based on user profile. To add custom attributes the form would be extended.
+2. Dynamic forms - add additional metadata to user profile attributes so forms can be dynamically generated.
+
+The crafted forms may be the ideal solution as that would allow us to more carefully craft form with good usability. A dynamic form may only have limited use as most likely when custom
+attributes are required it would be best to create a custom form to be able to have greater control of the layout.
 
 
 ## Wiring
@@ -142,13 +155,19 @@ This section will discuss how the user profile will be used within Keycloak.
 
 ### Registration
 
-The default registration form will display fields as defined in the user profile.
+The registration form today has a very limited number of attributes built-in. Custom validation is also complicated as it requires introducing a custom registration flow.
 
-It will also validate the profile and display error messages on each attribute.
+We will expand the registration form either with a crafted form with additional attributes or a dynamic form generated from the user profile.
+
+Validation will also be driven by the user profile making it much easier to introduce custom attributes and associated validation.
+
+If validation doesn't pass a generic error message will be displayed at the top, with individual error messages associated with each input field.
 
 ### Actions
 
-The update profile action will be extended to support asking for only attributes that are missing or invalid.
+The update profile action will be expanded to cover attributes in a similar fasion to the registration form. Further, it will support only asking for the fields that are not currently passing validation. 
+
+This will enable use-cases such as not asking users for their birthdate until a client requests the scope birthdate. It will also enable adding additional required attributes, which users will be required to add on the next login.
 
 ### Account Console
 
@@ -158,59 +177,58 @@ The old Account Console will require custom forms to add additional fields, it w
 
 ### Admin Console
 
-The user profile will display fields as defined in the user profile. Adding additional attributes will only allow selecting attributes from the profile and not add arbritary attributes. 
+The user profile will display fields as defined in the user profile. Adding additional attributes will only allow selecting attributes from the profile and not add arbritary attributes.
 
 ### User Federation
 
-TBD
+This section is incomplete and is mainly a brief suggestion of what we could do.
+
+User federation mappers that map to user attributes will only allow selecting attributes from the user profile, not allowing mapping to arbritary attributes, unless the user profile explicitly allows arbritary attributes (see legacy provider).
+
+Depending on the user federation provider configuration we may want to ask users to enter missing attributes using the update profile action, rejecting the user, or simply ignoring that the user does not validate. The latter may not be ideal, but may be required.
+
+We could also have a verification on whether or not all mandatory attributes have been mapped for a user federation provider.
 
 ### Identity Brokering
 
-TBD
+This section is incomplete and is mainly a brief suggestion of what we could do.
 
-### Mappers
+User federation mappers that map to user attributes will only allow selecting attributes from the user profile, not allowing mapping to arbritary attributes, unless the user profile explicitly allows arbritary attributes (see legacy provider).
+
+We can ask users to enter missing attributes using the update profile action. Today we don't have support for transient users (or users fully managed in the external IdP). If we add that then we will not want to ask users for missing attributes as those attributes would be lost on the next login.
+
+We could also have a verification on whether or not all mandatory attributes have been mapped for a identity provider.
+
+### Protocol Mappers
 
 All mappers that use user attributes should provide a drop-down with list of attributes and no longer have a input field to specify the attribute.
 
 
 ## Milestones
 
-### M1 Validation
+### M1 SPI
 
-* Define SPI
-* Add legacy provider
-* Validate self-registration form
-* Validate updates to profile through old Account Console
-* Validate updates to profile through Account REST and new Account Console
+Define the SPI/API for user profile provider and user attribute validators.
 
-### M2 Default Provider
+### M2 Validation
 
-* Add default provider
-* Profile defined through text-area in Admin Console
-* Ability to set User Profile provider for realm
+Focus for the first milestone should be validation of users self-registering and updates to the account through account console and actions.
 
-### M3 Dynamic forms
+This will require the legacy provider, and until the default provider is added users will need to add a custom user profile provider to validate additional attributes.
 
-* Extend registration form, with fields conditionally displayed based on user profile
-* Extend profile form in new Account Console, with fields conditionally displayed based on user profile
+### M3 Default Provider with additional attributes
 
-### M4 Admin Console
+Add default provider with basic text-area to edit the profile in the admin console. Registration form, account console and admin console will be expanded depending on what is decided in the dynamic forms section.
 
-* Validate user creation in admin console
-* Validate user updates in admin console
-* Extend user form in admin console, with fields conditionally displayed based on user profile
-* Merge user profile and attributes forms in order to create user to pass validation
+### M4 Mappers
+
+Update user attribute mappers to select attributes from user profile. 
 
 ### M5 User Profile editor
 
-* Editor in admin console for defining user profile
+Editor in admin console for defining user profile.
 
-### M6 Mappers
+### M6 User Federation & Identity Brokering
 
-* Select user attributes in mappers
-
-### M7 User Federation & Identity Brokering
-
-* Validation of users created through user federation
-* Validation of users created through identity brokering
+Integrate user federation and identity brokering with user profile. Scope to be decided as the correspodning sections above are completed.
 
