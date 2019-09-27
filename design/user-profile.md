@@ -1,6 +1,6 @@
 # User Profile
 
-* **Status**: Notes
+* **Status**: Draft #1
 * **JIRA**: [KEYCLOAK-2966](https://issues.jboss.org/browse/KEYCLOAK-2966)
 
 
