@@ -3,6 +3,15 @@
 * **Status**: Draft #1
 * **JIRA**: TBD
 
+## Changes
+
+### Draft #1
+
+* `url` renamed to `frontendUrl`
+* `backChannelUrlFromRequest` renamed to `forceBackendUrlToFrontendUrl`
+* Mentioned explicitly that `frontendUrl` and `forceBackendUrlToFrontendUrl` are options in standalone.xml
+* Expanded to section for realm URL override
+
 ## Motivation
 
 Today we have two hostname providers `request` and `fixed`. The `request` provider will use the `Host` header from 
@@ -39,7 +48,7 @@ The default provider will use the hostname from the request by default, but will
 * `frontendUrl` - value will be the base URL for front-channel requests to Keycloak (for example `https://mycompany.com/auth`)
 * `forceBackendUrlToFrontendUrl` - will allow forcing the back-channel URL to be same as front-channel URLs (default will be false)
 
-There will also be a new option on realms to override the front-channel base URL for a realm through the admin console.
+Realms will have an option `realmFrontendUrl` that allows overriding the base URL for front-channel requests to Keycloak. This will also allow a LB to map for example `https://auth.mycompany.com` to `https://keycloak.mycompany.internal/auth/realms/external-realm`.
 
 ### OpenID Connect Discovery endpoint
 
