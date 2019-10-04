@@ -1,6 +1,6 @@
 # Default Hostname Provider
 
-* **Status**: Notes
+* **Status**: Draft #1
 * **JIRA**: TBD
 
 ## Motivation
@@ -34,10 +34,10 @@ The Hostname SPI should be extended with:
 We should introduce a new default Hostname SPI that will be used by default for new installations. We will recommend
 changing to this provider in upgrade guides, but will keep the old providers for a while.
 
-The default provider will use the hostname from the request by default, but will the following options:
+The default provider will use the hostname from the request by default, but will the following configuration options for the provider in standalone.xml:
 
-* `url` - value will be the base URL for front-channel requests to Keycloak (for example `https://mycompany.com/auth`)
-* `backChannelUrlFromRequest` - will allow forcing the back-channel URL to be same as front-channel URLs (default will be false)
+* `frontendUrl` - value will be the base URL for front-channel requests to Keycloak (for example `https://mycompany.com/auth`)
+* `forceBackendUrlToFrontendUrl` - will allow forcing the back-channel URL to be same as front-channel URLs (default will be false)
 
 There will also be a new option on realms to override the front-channel base URL for a realm through the admin console.
 
