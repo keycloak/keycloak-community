@@ -82,8 +82,8 @@ adapter side.
 
 ### Discussions and relevant information
 
-* [GitHub issues - feedback from Marek]https://github.com/keycloak/keycloak-community/issues/34
-* [GitHub PR - Support different URLs for front and back channel requests in adapters]https://github.com/keycloak/keycloak/pull/6117
-* [JIRA - Support different URLs for front and back channel requests in adapters]https://issues.jboss.org/browse/KEYCLOAK-6073
+* [GitHub issues - feedback from Marek](https://github.com/keycloak/keycloak-community/issues/34)
+* [GitHub PR - Support different URLs for front and back channel requests in adapters](https://github.com/keycloak/keycloak/pull/6117)
+* [JIRA - Support different URLs for front and back channel requests in adapters](https://issues.jboss.org/browse/KEYCLOAK-6073)
 
 
