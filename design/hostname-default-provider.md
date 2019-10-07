@@ -78,3 +78,12 @@ Keycloak server the `url` of the default hostname provider would be set to `http
 
 This would make the adapter and third-party libraries use the correct URLs without additional configuration on the 
 adapter side.
+
+
+### Discussions and relevant information
+
+* [GitHub issues - feedback from Marek]https://github.com/keycloak/keycloak-community/issues/34
+* [GitHub PR - Support different URLs for front and back channel requests in adapters]https://github.com/keycloak/keycloak/pull/6117
+* [JIRA - Support different URLs for front and back channel requests in adapters]https://issues.jboss.org/browse/KEYCLOAK-6073
+
+
