@@ -1,7 +1,7 @@
 # Default Hostname Provider
 
 * **Status**: Draft #1
-* **JIRA**: TBD
+* **JIRA**: [KEYCLOAK-11728](https://issues.jboss.org/browse/KEYCLOAK-11728)
 
 ## Changes
 
