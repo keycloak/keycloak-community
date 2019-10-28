@@ -231,7 +231,7 @@ For the browser flow:
 ![Default Browser](img/multi-factor-admin-and-step-up/DefaultBrowser.png)
 
 For the direct grant flow:
-![Default Direct Grant](img/multi-factor-admin-and-step-up/DefaultBrowser.png)
+![Default Direct Grant](img/multi-factor-admin-and-step-up/DefaultDirectGrant.png)
 
 For the for the first broker login flow:
 ![Default First Broker Login](img/multi-factor-admin-and-step-up/DefaultFirstBrokerLogin.png)
