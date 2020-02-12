@@ -40,6 +40,10 @@ Defines how to manage OpenID Connect sessions, including postMessage-based logou
 * Initiate logout endpoint does not follow specification, and can also be used in a non-standard way
 ** https://issues.redhat.com/browse/KEYCLOAK-12133
 
+### OAuth 2.0
+
+#### [RFC 7662 Token Introspection](https://tools.ietf.org/html/rfc7662)
+
 
 ## Non-standard
 
@@ -94,13 +98,13 @@ but extends to more use-cases.
 Defines how sets of OPs and RPs can establish trust by utilizing a Federation Operator
 
 
-### OAuth
+### OAuth 2.0
 
+#### [RFC 7009 Token Revocation](https://tools.ietf.org/html/rfc7009)
 
-#### [OAuth 2.0 Device Authorization Grant](https://tools.ietf.org/html/draft-ietf-oauth-device-flow-15) (Draft)
+#### [RFC 8626 Device Authorization Grant](https://oauth.net/2/device-flow/)
 
-Flow that delegates authentication to a separate device. To be used with internet connected devices that themselves
-lack a browser or are input-constrained.
+The OAuth 2.0 Device Authorization Grant (formerly known as the Device Flow) is an OAuth 2.0 extension that enables devices with no browser or limited input capability to obtain an access token. This is commonly seen on Apple TV apps, or devices like hardware encoders that can stream video to a YouTube channel.
 
 * [Keycloak JIRA](https://issues.jboss.org/browse/KEYCLOAK-7675)
 * [Keycloak design proposal](https://github.com/keycloak/keycloak-community/pull/6)
