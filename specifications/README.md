@@ -37,7 +37,8 @@ Defines how clients dynamically register with OpenID Providers.
 Defines how to manage OpenID Connect sessions, including postMessage-based logout functionality.
 
 * Keycloak coverage: To be reviewed
-* Missing initiate logout endpoint
+* Initiate logout endpoint does not follow specification, and can also be used in a non-standard way
+** https://issues.redhat.com/browse/KEYCLOAK-12133
 
 
 ## Non-standard
