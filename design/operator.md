@@ -1,4 +1,4 @@
-# Observerability
+# Initial Operator Design
 
 * **Status**: Notes
 * **JIRA**: [KEYCLOAK-10036](https://issues.jboss.org/browse/KEYCLOAK-10036)

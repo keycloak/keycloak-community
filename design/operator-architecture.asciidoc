@@ -1,0 +1,154 @@
+# Keycloak Operator High Level Architecture
+
+* **Status**: Draft #1
+* **JIRA**: https://issues.redhat.com/browse/KEYCLOAK-10319[KEYCLOAK-10319]
+* **Source of the images**: https://docs.google.com/presentation/d/13N5ClXXXcxKjXgor72rUdtMBN07_GneUkhTTwBsy_tE/edit?usp=sharing[Google Slides]
+
+This document shows a big picture how all the components and layers of Keycloak Operator work together. The blueprint presented here shall be used a guideline for designing features as well as integrating community Pull Requests.
+
+## Manifesto
+
+We envision Keycloak Operator as:
+
+* an opinionated way of installing and maintaining Keycloak installation on both Kubernetes and OpenShift.
+* a way to deliver a high level usability rather than low-level toggles
+* an example of a recommended way of installing, configuring, managing custom extension and themes.
+* the thinnest possible layer, with the least possible logic, on top of Keycloak Container and Keycloak Server.
+
+## Use cases
+
+Our vision for Keycloak Operator is driven by use cases. The use cases mention the following personas:
+
+* Cluster Admin - a Kubernetes/OpenShift administrator
+* Service Infrastructure Admin - an administrator who provisions Keycloak Operator as well as Keycloak Cluster
+* Realm Admin - a Keycloak administrator, who can provision realms (both using Custom Resources and Admin UI)
+* Secured Application - either configured by an engineering team (using self registration feature) or by Keycloak Admin (or Keycloak Realm Admin).
+
+The use cases we defined are based on Operatr Capability Model:
+
+image:https://raw.githubusercontent.com/operator-framework/operator-sdk/master/doc/images/operator-capability-level.png[Operator Capability Model]
+
+.Keycloak Operator use cases
+[caption=]
+[options="header",cols="^.^,^.^,^.^,^.^"]
+|====
+|Persona |Capability |Use case| Addressed?
+
+|Cluster Admin |Basic Install | Define Pod Disruption Budget to upgrade Kubernetes cluster| Yes
+|Cluster Admin |Basic Install | Use Keycloak as a default IdP in Kubernetes| Yes
+|Cluster Admin |Basic Install | Use Keycloak as a default IdP in OpenShift| No
+|Cluster Admin |Full Lifecycle| Configure Storage Class for Local Backups| Yes
+
+|Service Infrastructure Admin |Basic Install | Install Keycloak Operator | Yes
+|Service Infrastructure Admin |Basic Install | Install and manage Keycloak installation | Yes
+|Service Infrastructure Admin |Basic Install | Install Keycloak in offline mode | No
+|Service Infrastructure Admin |Basic Install | Apply custom theme for the organization | Yes
+|Service Infrastructure Admin |Basic Install | Install extensions | Yes
+|Service Infrastructure Admin |Seamless Upgrades | Upgrade installed Keycloak (automatically and on demand) with no downtime | Partially
+|Service Infrastructure Admin |Seamless Upgrades | Create automatic backup before migrating to the new version| No
+|Service Infrastructure Admin |Full Lifecycle | Create database backup| Yes
+|Service Infrastructure Admin |Full Lifecycle | Recover Keycloak from a database backup| No
+|Service Infrastructure Admin |Deep Insights | Monitor Keycloak health| Yes
+|Service Infrastructure Admin |Deep Insights | Monitor Keycloak performance| Yes
+
+|Realm Admin |Basic Install | Provision new Realm, Client and User| Yes
+|Realm Admin |Basic Install | Secure an application| Yes
+|Realm Admin |Basic Install | Access Admin Console| Yes
+|Realm Admin |Basic Install | Provide transparent secure proxy (Gatekeeper) for third party applications| Yes
+|Realm Admin |Seamless Upgrades | Zero downtime upgrades| No
+|Realm Admin |Full Lifecycle | Backup created resources periodically| Yes
+|Realm Admin |Deep Insights | Analyze usage and performance metrics| Partially
+|Realm Admin |Autopilot | Scale Keycloak automatically depending on traffic| No
+
+|Secured Application |Basic Install | Accessing Keycloak using a secured connection| Yes
+|Secured Application |Seamless upgrades | Accessing Keycloak during the upgrade process| No
+|Secured Application |Full Lifecycle | Keep session secured even when facing a disaster| Partially
+|Secured Application |Autopilot | Provide stable response time despite the load| No
+|====
+
+## History
+
+Keycloak Operator was re-designed from the scratch by a small team withing RHMI and RHSSO groups. The implementation plan was described in the link:operator.md[Initial Operator Design Document]. At the end of a 3 sprint cycle, the team delivered a Level 4 Operator, that was pushed into the https://operatorhub.io/operator/keycloak-operator[Operatorhub]. Once the initial implementation was done, the Operator was handed over to the Keycloak/RHSSO Team.
+
+After maintaining the operator for several months, it became necessary to create a High Level Design (and a long-term vision) how all Keycloak components work together.
+
+## Layered architecture
+
+Keycloak ecosystem consists of 3 layers:
+
+* https://github.com/keycloak/keycloak-operator[Keycloak Operator]
+* https://github.com/keycloak/keycloak-containers/tree/master/server[Keycloak Container Image]
+* https://github.com/keycloak/keycloak[Keycloak Server]
+
+image::img/Keycloak-operator-layers.png[Keycloak ecosystem layers]
+
+Keycloak Operator uses Keycloak Container image, which in turn uses Keycloak Server bits. The goal is to implement features in the lowest possible layer, so that they get inherited by the all upper layers.
+
+.Feature implementation example
+****
+Let's consider a simple feature - adding JSON formatted logs based on an environmental variable.
+
+This feature requires touching all three layers:
+
+1. Keycloak Server needs to provide a JSON log based formatter.
+2. Keycloak Container needs to expose an environment variable, that could be switching on to use JSON formatting
+3. Keycloak Operator needs to expose proper configuration on Custom Resource level enabling JSON log formatting.
+
+The basic rule here is to push individual features as low in the stack as possible. In this example, providing JSON log extension only in the Operator would be a mistake.
+****
+
+## Components created by the Operator
+
+The diagram below presents the most important connections between components:
+
+image::img/Keycloak-operator-components.png[Keycloak Operator components]
+
+When Keycloak Operator spins up Keycloak installation, it creates:
+
+* `keycloak-db-secret` - used to store database username, password and other properties, such as external address (if used).
+* `credentials-<<CR Name>>` - Admin user credentials to log into Keycloak installation
+* `keycloak` StatefulSet with HA support
+* `keycloak-postgresql` - Responsible for spinning up Postgresql deployment
+* `keycloak-discovery` Service - used for `JDBC_PING` discovery
+* `keycloak` Service - Used for connecting Keycloak using HTTPS (HTTP is not allowed)
+* `keycloak-postgresql` - A service for connecting both internal and external (if used) database instance
+* `keycloak` Route (OpenShift) or Ingress (Kubernetes) - Used for accessing Keycloak
+
+As you probably noticed, `MyKeycloak` name (used for `Keycloak` Custom Resource) appears only once - in `credential-<<CR Name>>`. Since the Operator allows to install only a single Keycloak cluster in a namespace, we always call it `keycloak`.
+
+NOTE: Hardcoding names may change in the future, but at the time of writing this design, we have no plans to do it.
+
+## Managed Custom Resources
+
+Keycloak Operator uses the following Custom Resources:
+
+* `Keycloak` - Responsible for spinning up Keycloak installation
+* `KeycloakRealm` - Managing Keycloak Realms
+* `KeycloakClient` - Managing Keycloak Clients
+* `KeycloakUser` - Managing Keycloak Users
+
+Some of the Custom Resources, such as `KeycloakClient` or `KeycloakUser` require a reference to a `KeycloakRealm`. This mapping has been implemented by using `LabelSelector` (the same object used by Kubernetes Services for example). The selector needs to be configured in such a way, that is points one or many realms.
+
+## Internal loop
+
+One of the key design decisions we made is to separate Kubernetes client code from our Operator logic. This allows us to test most of the Keycloak Operator interactions in unit tests. Every Controller uses the following pattern:
+
+image::img/Keycloak-operator-loop.png[Keycloak Operator loop]
+
+Every loop (triggered by the Operator SDK) starts with collecting the `Current State`. This object contains a list of Kubernetes resources used by the Operator (such as Keycloak `StatefulSet`, Keycloak `Service` etc). Then, this list is passed to a `Reconciler` object, that produces a list of `Actions`. `Actions` are a description of a piece of work in the Kubernetes cluster (e.g. create a Keycloak Service). All those objects are aggregated into a single list and called `Desired State`. Finally, we pass this list into an `Action Runner` that interacts with Kubernetes cluster and creates or updates all objects.
+
+This approach has a lot of benefits, including:
+
+* We can test `Reconciler` logic using unit tests as we don't need to communicate with Kubernetes.
+* All Custom Resource loops look the same - we collect the `Current State`, reconcile it into a `Desired State` and finally, we pass it to an `Action Runner`.
+
+## Implementation guideline
+
+* **Supporting both OpenShift and Kubernetes is a must** - every feature must work in both usecases correctly.
+* **We prefer convention over configuration** - we hardcode secret names, so that they can be easily figured out by automated scripts.
+* **Do not use mocks** - we just hate them... and with our approach to the architecture, they are completely unnecessary.
+* **We prefer unit tests over e2e tests** - although we do need both, we prefer testing features on the lowest possible layer.
+
+## Further reading
+
+* https://github.com/operator-framework/community-operators/blob/master/docs/best-practices.md[Operator Best Practices]
