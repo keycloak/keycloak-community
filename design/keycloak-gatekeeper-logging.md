@@ -28,7 +28,6 @@ To add further customizations, users can use the zap flagset and specify flags o
 The zap flagset includes the following flags that can be used to configure the logger:
 
 * `--zap-level` string or integer - Sets the zap log level (`debug`, `info`, `error`, or an integer value greater than 0). If 4 or greater the verbosity of client-go will be set to this level.
-* `--zap-stacktrace-level` - Set the minimum log level that triggers stacktrace generation (default: `error`)
 * `--zap-time-encoding` string - Sets the zap time format (`epoch`, `millis`, `nano`, or `iso8601`)
 
 These flag sets would override the existing configuration if they are set otherwise, the configuration specified from existing flags would be valid.
