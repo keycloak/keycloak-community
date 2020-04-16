@@ -33,7 +33,9 @@
     <div id="gitalk-container"></div>
     <script>
       function getPage() {
-        return (location.hash.indexOf('/', 2) == -1 ? 'home' : location.hash.substring(2, location.hash.indexOf('/', 2)));
+        var p = (location.hash.indexOf('/', 2) == -1 ? 'home' : location.hash.substring(2));
+        console.info(p);
+        return p;
       }
 
       var gitalk;
@@ -47,7 +49,8 @@
          // facebook-like distraction free mode
          distractionFreeMode: false,
          id: 'admin-console-' + getPage(),
-         title: 'Admin Console Feedback - ' + getPage()
+         title: 'Admin Console Feedback - ' + getPage(),
+         body: location.href
        })
      }
 
