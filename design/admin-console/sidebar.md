@@ -1,11 +1,9 @@
-<!-- docs/_sidebar.md -->
-
 * [**Home**](/)
 
-* [**Clients**](/clients/0.overview.md)
+* [**Clients**](/clients/overview.md)
 
-  * [List](/clients/1.clients-list.md)
-  * [Create/Import](/clients/2.create-import.md)
-  * [Settings](/clients/3.settings.md)
-  * [Credentials](/clients/4.credentials.md)
-  * [ClientScopes - Setup&Evaluate](/clients/5.clientscopes.md)
+  * [List](/clients/list.md)
+  * [Create/Import](/clients/create-import.md)
+  * [Settings](/clients/settings.md)
+  * [Credentials](/clients/credentials.md)
+  * [ClientScopes - Setup&Evaluate](/clients/clientscopes.md)
