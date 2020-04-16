@@ -1,2 +1,6 @@
 .idea
 *.iml
+.bundle
+.vendor
+Gemfile.lock
+_site
