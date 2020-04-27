@@ -1,0 +1,32 @@
+# Hierarchycal resources and inherited permissions
+
+* **Status**: Notes 
+
+## Motivation
+Currently Keycloak supports quite flexible permission policies allowing users to define complex permissions on resources. Additionally they are quite easy to use when requesting specific resources.
+
+When working with hierarchycal resources, it is still possible to implement add hoc permission inheritance on resources usign composite permissions, and getting permissions on a single resources is still quite simple and easey. 
+
+Unfortunately, getting permissions on nested resources (for intance in bulk operations) is still a challenge because keycloak doesn't track any inheritance info within resources. In this situation, it would be required to check the permissions on each of every nested resource (witch in many cases implies huge number of extra requests).
+
+At that point, it would be nice to have a hierarchycal resource entity that points to itself, so that when you point to a specific resource, you also have all its parent and child elements, being able to easily obtain all resources a user has access to in a single request.
+
+### Use Case #1
+
+Getting permissions on a specific resource. The first improvement would be to gain inherited permissions on a nested resource without the need for adding new composite permissions that add up all previows permissions, or the use of groups or any other feature that would increase the model complexity and add a huge number of elements in the authorization flow.
+
+### Use Case #2
+
+Bulk operations, in that scenario, a user would ask for all resources he/she has access to within a specific resource. That would give the user a list of resources instead of having to request every single nested resource permissions on that specific resource.
+
+## Feature usage
+
+* Resources view would have another field to specify resource parent (if any)
+* API service to manage resources relation
+* API service to review inherited resource permissions
+* API service to get all resources with a given access permission given a parent resource
+
+## Implementation
+
+* I would sugest to include a self relation in the Resources entity, adding attributes relating parent and child elements
+* Update the policy evaluation to include parent inherited permissions 
