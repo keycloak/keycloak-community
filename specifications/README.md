@@ -56,6 +56,17 @@ Notes:
 Keycloak coverage: To be reviewed
 
 
+#### [RFC 7009 Token Revocation](https://tools.ietf.org/html/rfc7009)
+
+> This document proposes an additional endpoint for OAuth authorization
+     servers, which allows clients to notify the authorization server that
+     a previously obtained refresh or access token is no longer needed.
+     This allows the authorization server to clean up security
+     credentials.  A revocation request will invalidate the actual token
+     and, if applicable, other tokens based on the same authorization
+     grant.
+
+
 #### [The OAuth 2.0 Authorization Framework: Bearer Token Usage](https://tools.ietf.org/html/rfc6750)
 
 > This specification describes how to use bearer tokens in HTTP
@@ -173,19 +184,6 @@ sure they are doing it according to best practices.
 
 Keycloak should make it easier for users that secure native apps using Keycloak to make
 sure they are doing it according to best practices. 
-
-
-#### [RFC 7009 Token Revocation](https://tools.ietf.org/html/rfc7009)
-
-> This document proposes an additional endpoint for OAuth authorization
-     servers, which allows clients to notify the authorization server that
-     a previously obtained refresh or access token is no longer needed.
-     This allows the authorization server to clean up security
-     credentials.  A revocation request will invalidate the actual token
-     and, if applicable, other tokens based on the same authorization
-     grant.
-
-[KEYCLOAK-5325](https://issues.redhat.com/browse/KEYCLOAK-5325)
 
 
 #### [RFC 8626 Device Authorization Grant](https://oauth.net/2/device-flow/)
