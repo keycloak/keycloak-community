@@ -86,15 +86,37 @@ A very rough idea on how the user profile JSON could look like:
     {
         "attributes": [{
             "name": "department",
-            "view": ["admin", "user"],
-            "edit": ["admin"],
-            "requirement":"always",
+            "permissions": {
+                    "view": ["admin", "user"], 
+                    "edit": ["admin"],
+            }
+            "requirement": {
+                "always",
+            }
             "validation": {
                 "name", 
-                { "length" : { "min" : 10, "max": 20 } }
+                "context" : ["UserProfileUpdate"],
+                { "length" : { "min" : 10, "max": 20 } },
+            },
+            "converter": {
+                "datetime-converter": {
+                    "datetime-format" : "tt/mm/yyyy"
+                },
+                "timezone-converter": {
+                    "z": "UTC-0"
+                };
+            },
+            "annotations":  {
+                "key": "value",  
+                "framecolor": "red",
+                "gui-order": "1",
+                "type": "dropdown",
+                "defaults" : [1,2,3,5]
             }
-        }
+        }]
     }
+
+### Required Fields
 
 Requirement should support following values:
 
@@ -108,13 +130,15 @@ The `user` requirement allows an admin to create a user without specifying the v
 
 The `scope` requirement allows an attribute to only be required when a specific client scope is being requested.
 
+### Validation
+
 Validation should support the following values:
 
 * `validator-id`
 * `{ "validator-id" : "<config>" }`
 * `{ "validator-id" : { ... } }`
 
-This will allow using built-in validators as well as adding custom validators. A validator can take an option config either as a single field or a JSON object.
+This will allow using built-in validators as well as adding custom validators. A validator can take an option config either as a single field, or a JSON object.
 
 Built-in validators should cover:
 
@@ -128,6 +152,25 @@ Built-in validators should cover:
 
 There will be a user attribute SPI allowing custom validators to be created.
 
+Validators can also be attached to a special context meaning the validation will only be performed in that specific context.
+This allows distinguishing admin and user validation. For example, an admin may create a user without first and last name, but the user must provider these upon login.
+
+Possible contexts include:
+
+* UpdateProfile
+* UserRegistration
+* UserResource
+* Account
+* Registration
+
+### Converter (optional)
+
+Converters can be used to preprocess an attribute value before storing it.
+A converter may also affect the "read" process.
+
+### Annotations
+
+Annotations are e.g. unstructured labels which are populated to the freemarker context and can be considered for theme rendering.
 
 ## Built-in Attributes
 
@@ -206,9 +249,16 @@ All mappers that use user attributes should provide a drop-down with list of att
 
 ## Milestones
 
-### M1 SPI
+### M1 SPI, Legacy Provider and UserModel preparation/refactoring
 
-Define the SPI/API for user profile provider and user attribute validators.
+Define the SPI/API for the user profile, its attributes with validators (and optionally permissions).
+Implement simple legacy provider.
+
+Migrate to new user model where all fields like username, email, etc. are attributes
+Don't change database model: Use entity - model adapter classes to enforce legacy behaviour: all legacy fields are "mandatory"
+Use legacy provider to enforce old behaviour
+
+(Potentially, those can be split into several contributions)
 
 ### M2 Validation
 
@@ -218,7 +268,9 @@ This will require the legacy provider, and until the default provider is added u
 
 ### M3 Default Provider with additional attributes
 
-Add default provider with basic text-area to edit the profile in the admin console. Registration form, account console and admin console will be expanded depending on what is decided in the dynamic forms section.
+Add default provider with basic text-area to edit the profile in the admin console. 
+Registration form, account console and admin console will be expanded depending on what is decided in the dynamic forms section.
+Introduce client-scope based control of requirement configuration.
 
 ### M4 Mappers
 
