@@ -5,17 +5,20 @@
 
 ## Motivation
 
-To make it easy to secure client applications, it is beneficial to realize the following three points in a unified way.
+To make it easy to secure client applications, it is beneficial to realize the following four points in a unified way.
 
 1. Setting policies on what configuration a client can have
 2. Validation of client configurations
 3. Conformance to a profile such as FAPI
+4. Limiting what type of configuration a client can have based on source that is creating the client
 
 1 and 2 have been realized by the current keycloak, but not flexible and comprehensive.
 
-To realize these three points in a unified way, here "Client Policies" concept is introduced.
-
 3 will be realized by [Client Conformance Profiles](https://issues.redhat.com/browse/KEYCLOAK-11612) based on this "Client Policies". It discusses which kind of security profiles like FAPI are supported and how to implement them.
+
+4 has not yet been realized by the current keycloak.
+
+To realize these four points in a unified way, here "Client Policies" concept is introduced.
 
 ## Use-cases
 
@@ -46,9 +49,13 @@ The pre-set client policies for following some security profiles (FAPI, SPA, Nat
 It is treated in [Client Conformance Profiles](https://issues.redhat.com/browse/KEYCLOAK-11612) based on this Client Policies. Which kind of security profiles are supported and how to realize them are discussed on 
 [Client Conformance Profiles](https://issues.redhat.com/browse/KEYCLOAK-11612).
 
+## Scope
+
+This client policy concept is independent of any specific protocol. However, this document only deals with the implementation for OIDC.
+
 ## Implementation details
 
-Client Policies consists of the three building blocks, Policy, Condition, and Executor.
+Client Policies consists of the four building blocks, Policy, Condition, and Executor.
 
 ### Condition : which client
 
@@ -66,39 +73,43 @@ A condition can be configuable the same as other configurable provider. What can
 
 The following conditions are provided:
 
-* The way of creating/updating a client (OIDC Dynamic Client Registration - Authenticated, Anonymous, Admin REST API - Admin Console, etc.)
+1. The way of creating/updating a client
 
-E.g. When creating a client, a policy is adopted when this client is created by OIDC Dynamic Client Registration with Initial Access Token.
+* OIDC Dynamic Client Registration
+  * Authenticated
+  * Anonymous
+* Admin REST API (Admin Console, etc.)
 
-* Client Access Type (confidential, public, bearer-only)
+E.g. When creating a client, a policy is adopted when this client is created by OIDC Dynamic Client Registration with the access token.
+
+2. Author of a client
+
+* Group
+* Role
+
+On OIDC dynamic client registration, an author of a client is the end user who was authenticated to get an access token for generating a new client, not Service Account of the existing client that actually accesses the registration endpoint with the access token.
+
+On registration by Admin REST API, an author of a client is the end user like keycloak's administrator
+
+3. Client
+
+* Client Access Type
+  * confidential
+  * public
+  * bearer-only
 
 E.g. When a client sends an authorization request, a policy is adopted if this client is confidential.
 
-* Client ID
-
-E.g. When a client sends a token request, a policy is adopted if this client's ID (`client_id` in OAuth2) is "TPP-ClientApp".
-
-* Client Redirect URI
-
-E.g. When updating a client on Admin Console, a policy is adopted if this client's updating redirect URI is exactly matched with "https://www.example.com/callback/".
-
-The followings are adpoted only when creating or updating clients:
-
+* Client Domain Name
 * Client Role
 * Client Scope
-* Group
-* Host
-* IP
-* User
-* User Role
+* Client Host
+* Client IP
 
-These conditions are evaluated against some properties or contexts of a client application(e.g. `security-admin-console`) and its user who is trying to create or update clients.
-
-E.g. When creating a client, a policy is adopted if it is on Admin Console and the user of this Admin Console belongs to the group "IT-Dept".
 
 ### Executor : what action
 
-An executor specifies what action is executed on a client to which a policy is adopted. The executor executes one specified action. Such the action is checking whether the value of the parameter "redirect_uri" in the authorization request matches exactly with one of the pre-registered redirect URIs on Authorization Endpoint and rejecting this request if not. 
+An executor specifies what action is executed on a client to which a policy is adopted. The executor executes one or several specified actions. Such the action is checking whether the value of the parameter "redirect_uri" in the authorization request matches exactly with one of the pre-registered redirect URIs on Authorization Endpoint and rejecting this request if not. 
 
 #### How to implement
 
@@ -106,7 +117,23 @@ An executor can be implemented as a provider (`ClientPolicyExecutorSpi`, `Client
 
 #### How to configure
 
-A executor can be configuable the same as other configurable provider. What can be configured depends on each executor's nature.
+An executor can be configuable the same as other configurable provider. What can be configured depends on each executor's nature.
+
+#### What events
+
+An executor acts on the follwing events:
+
+* Creating a client
+* Updating a client
+* Sending an authorization request
+* Sending a token request
+* Sending a token refresh request
+* Sending a token revocation request
+* Sending a token introspection request
+* Sending a userinfo request
+* Sending a logout request with a refresh token
+
+On each event, an executor can work in multiple phases. For example, on creating/updating a client, the executor can modify the client configuration in augment phase. After that, the executor validate this configuration in validation phase.
 
 #### Which kind of executors are provided
 
@@ -162,9 +189,9 @@ Conditions and executors of a policy should be evaluated on endpoints where a cl
     * Token Request
     * Token Refresh Request
 
-##### Logout Endpoint
+##### Token Revocation Endpoint
   * Operation
-    * Logout Request by Refresh Token
+    * Revocation Request by Refresh Token
 
 ##### Token Introspection Endpoint
   * Operation
@@ -173,6 +200,10 @@ Conditions and executors of a policy should be evaluated on endpoints where a cl
 ##### UserInfo Endpoint
   * Operation
     * UserInfo Request
+
+##### Logout Endpoint
+  * Operation
+    * Logout Request by Refresh Token
 
 ### Configuration
 
@@ -183,7 +214,7 @@ An administrator can update their created policies by add/modify/delete conditio
 
 ### Backward Compatibility
 
-Client Policies can take over Client Registration. However, Client Registration Policies also still co-exist. In the future, Client Registration Policies will be removed.
+Client Policies can take over Client Registration. However, Client Registration Policies also still co-exist. In the future, Client Registration Policies will be removed and the existing client registration policies will be migrated into new client policies automatically.
 
 ### Extensibility
 
