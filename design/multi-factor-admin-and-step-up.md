@@ -1,8 +1,7 @@
 # Managing multi-factor authentication and Step-up authentication in Keycloak
 
-* **Status**: Draft #2
-* **Author**: [Alistair Doswald](https://github.com/AlistairDoswald)
-* **JIRAs**: [KEYCLOAK-9693](https://issues.jboss.org/browse/KEYCLOAK-9693), [KEYCLOAK-9694](https://issues.jboss.org/browse/KEYCLOAK-9694) and [KEYCLOAK-847](https://issues.jboss.org/browse/KEYCLOAK-847)
+* **Status**: Draft #3
+* **JIRA**: [KEYCLOAK-9693](https://issues.jboss.org/browse/KEYCLOAK-9693), [KEYCLOAK-9694](https://issues.jboss.org/browse/KEYCLOAK-9694) and [KEYCLOAK-847](https://issues.jboss.org/browse/KEYCLOAK-847)
 
 ## Motivation
 
@@ -69,88 +68,77 @@ Flows are still read from top to bottom, and may contain executions and sub-flow
 The possible requirements and their logical rules are:
 * **Required**: Within a flow, any **required** flow elements MUST be processed. However, this is only true for the current flow. Any **required** flow element within a sub-flow is only processed if that sub-flow is entered. For a flow to be successful, every **required** flow element must be successful.
 * **Alternative**: Within a flow, **alternative** flow elements are only executed if the flow is not already successful. Because the **required** flow elements within a flow are sufficient to mark a flow as successful, any **alternative** flow element within a flow that contains **required** flow elements will never be executed. In this case, they are functionally **disabled**.
-* **Conditional**: This requirement replaces **optional** and can only be placed on flows. A **conditional** flow can contain a "condition execution". These condition executions are logical statements. If the condition execution processes as _true_ then the **conditional** flow acts as **required**. If not, the **conditional** flow acts as **disabled**. If no condition execution is set, the **conditional** flow acts as **disabled**. Conditional flows will be discussed further in the section on step-up, as they are not necessary to do only multi-factor and multi-token logins.
+* **Conditional**: This requirement replaces **optional** and can only be placed on flows. A **conditional** flow can contain a "condition execution". These condition executions are logical statements. If the condition execution processes as _true_ then the **conditional** flow acts as **required**. If not, the **conditional** flow acts as **disabled**. If no conditional execution is set, the **conditional** flow acts as **disabled**. If a flow contains conditional executions and is not set to **conditional**, the conditional executions are not evaluated.
 * **Disabled**: within a flow, any **disabled** flow elements MUST NOT be processed.
 
-These rules are mostly the same as the current rules, with flow elements being processed sequentially from top to bottom. The major change is what happens with a flow or sub-flow with _active_ **alternative** flow elements (where _active_ means that it is in a flow or sub-flow that contains neither **required** flow elements or **conditional** flows whose conditions evaluate to _true_): flow elements that require no user interaction are automatically executed sequentially, until the first flow element which requires user interaction is encountered. A user who is at an **alternative** execution which has user interaction MUST be able to select any other **alternative** flow element, including **alternative** flows and **alternative** executions that do not require user interaction. In addition, any time a user is in a user-interactive execution in a sub-flow, he MUST be able to return to the parent flow. When returning to a parent flow, it executes once again from the top.
+These rules are mostly the same as the current rules, with flow elements being processed sequentially from top to bottom. The major change is what happens with a flow or sub-flow with _active_ **alternative** flow elements (where _active_ means that it is in a flow or sub-flow that contains neither **required** flow elements or **conditional** flows whose conditions evaluate to _true_): flow elements that require no user interaction are automatically executed sequentially, until the first flow element which requires user interaction is encountered. A user who is at an **alternative** execution which has user interaction MUST be able to select any other **alternative** flow element, including **alternative** flows and **alternative** executions that do not require user interaction.
+
+#### Conditional flows and conditional executions
+
+While the behaviour of **conditional** flows is simple - evaluate the conditional execution, consider the flow **required** if _true_ and act as **disabled** if _false_ - the conditional executions themselves can have a more complicated logic. An example of a simple conditional execution would be a "role" conditional execution. This would be configured with a set of roles, and would only evaluate to _true_ if a user currently executing the flow has one of the configured roles.
+
+A more complex conditional execution is required to replicate and extend the behaviour of current **optional** authentication executions, for example the OTP Form execution. For these authentication executions, when **optional**, the user is presented with the authentication form only when the user has a credential of the corresponding type (e.g. an OTP credential for the OTP Form execution). The corresponding conditional execution would have a similar behaviour:
+* When set in a **conditional** sub-flow containing **alternative** authentication executions, the conditional execution must check if the user has a credential for at least one of the **alternative** authentication executions, and if this the case it evaluates to _true_,
+* When set in a **conditional** sub-flow containing **required** authentication executions, the the conditional execution must check if the user has a credential for each of the **required** authentication executions, and only then will it evaluate to _true_.
+
+#### Moving back within flows
+
+With the ability to design more complex flows, the user may wish to return to a previous state without having to restart a flow from the beginning. This is especially important because a user may select a flow in an **alternative** execution, meaning that the user must be able to return to the **alternative** selection of executions. But this is also true if the user has a long sequence of **required** executions which require user interaction, and may wish to cancel his last action without having to start over. For this, the user would have a "back" button available within forms. This "back" button allows the user to return to a previous interactive execution, no matter how many non-interactive executions happened in between. For the flow, this means rolling back the state to the previous interactive execution, and displaying it to the user. If there is no previous interactive execution to return to, the "back" button is not displayed.
 
 #### Flow logic examples
 
-Here are some examples of how the new flow logic works for single factor, multi-factor and password-less authentication. More extensive examples are presented in the appendix section "Authentication Flow examples".
+Here are some examples of how the new flow logic works for single factor, multi-factor, password-less, and conditional authentication.
 
-An example of single factor flow is the following:
-```
-Auth type                         | Requirement
------------------------------------------------------------------------------------------------
-Auto                               [x] Alternative  [ ] Required  [ ] Conditional  [ ] Disabled
-  | - Cookie                       [x] Alternative  [ ] Required                   [ ] Disabled  
-  | - Kerberos                     [x] Alternative  [ ] Required                   [ ] Disabled
-Identity Provider Redirector       [x] Alternative  [ ] Required                   [ ] Disabled  
-Authenticate with Keycloak         [x] Alternative  [ ] Required  [ ] Conditional  [ ] Disabled  
-  | - Username                     [ ] Alternative  [x] Required                   [ ] Disabled
-  | - 1st                          [ ] Alternative  [x] Required  [ ] Conditional  [ ] Disabled
-       | - Password                [x] Alternative  [ ] Required                   [ ] Disabled
-       | - OTP                     [x] Alternative  [ ] Required                   [ ] Disabled
-```
+An example of a single factor flow is the following:
+
+![Single Factor Flow](img/multi-factor-admin-and-step-up/SingleFactorFlow.png)
+
 At the top level flow there are three **alternative** flow elements:
 * `Auto` is a sub-flow that will be evaluated first. Both executions don't have any user interaction, so they will be automatically evaluated sequentially. If the user has a session cookie or kerberos it will be successful, and he will be logged in. Otherwise the sub-flow is not successful.
-* `Identity provider Redirector` is an authentication execution that is encountered next. Since it is a user choice, the user can choose to log in with another identity provider, or choose "Authenticate with Keycloak" or "Auto".
+* `Identity provider Redirector` is an authentication execution that is encountered next. It will redirect the user for identity brokering if configured appropriately, but will otherwise be automatically skipped.
 * `Authenticate with Keycloak` is a sub-flow with two **required** flow elements. Both will be executed sequentially:
-  * `Username`: the user must type in his username. This execution is successful as long as the username is in the database. From here the user can move back to the parent authentication flow with a back button.
+  * `Username Form`: the user must type in his username. This execution is successful as long as the username is in the database.
   * `1st`: a subflow with two **alternative** flow elements. Any one of the two will allow the user to log in, as the flow will be successful:
-    * `Password`: a password set by the user. From here the user can either select `OTP` or move back to the `Authenticate with Keycloak` sub-flow (for example if he realises that he mistyped his password).
-    * `OTP`: an OTP from a device owned by the user. From here the user can either select `Password` or move back to the `Authenticate with Keycloak` sub-flow.
-
-Note that in the previous example, `Auto` can be chosen, even though it may not make any sense for a user. This could be prevented by either:
-* Being able to mark a sub-flow as "non-selectable" in its configuration
-* Making non-selectable the flows which contain no executions that require user interaction.
+    * `Password Form`: a password set by the user. From here the user can either select `OTP Form` or move back to the `Username Form` (for example if he realises that he mistyped his username).
+    * `OTP Form`: an OTP from a device owned by the user. From here the user can either select `Password` or move back to the `Username Form`.
 
 An Example of a 2 factor flow is similar to the single factor flow:
-```
-Auth type                         | Requirement
------------------------------------------------------------------------------------------------
-Auto                               [x] Alternative  [ ] Required  [ ] Conditional  [ ] Disabled
-  | - Cookie                       [x] Alternative  [ ] Required                   [ ] Disabled  
-  | - Kerberos                     [x] Alternative  [ ] Required                   [ ] Disabled
-Identity Provider Redirector       [x] Alternative  [ ] Required                   [ ] Disabled  
-Authenticate with Keycloak         [x] Alternative  [ ] Required  [ ] Conditional  [ ] Disabled  
-  | - Username                     [ ] Alternative  [x] Required                   [ ] Disabled
-  | - 1st                          [ ] Alternative  [x] Required  [ ] Conditional  [ ] Disabled
-       | - Password                [x] Alternative  [ ] Required                   [ ] Disabled
-  | - 2nd                          [ ] Alternative  [x] Required  [ ] Conditional  [ ] Disabled
-       | - OTP                     [x] Alternative  [ ] Required                   [ ] Disabled
-       | - WebAuthn                [x] Alternative  [ ] Required                   [ ] Disabled
-```
+
+![Two Factor Flow](img/multi-factor-admin-and-step-up/TwoFactorFlow.png)
+
 The top flow is the same as the previous example, so we will just look at what has changed within the `Authenticate with Keycloak` sub-flow, which now has three **required** flow elements:
-* `Username`: the user must type in his username. This execution is successful as long as the username is in the database. From here the user can move back to the parent authentication flow with a back button.
-* `1st`: a sub-flow with a single flow element: `Password`. Since it's alone it could be **alternative** or **required** and the result would be the same. Note however that having the `Password` directly **required** within the parent subflow would be a mistake, as it would not allow moving back to the `Username` selection. An example of this is in the appendix.
+* `Username Form`: the user must type in his username. This execution is successful as long as the username is in the database.
+* `1st`: a sub-flow with a single flow element: `Password Form`. Since it's alone it could be **alternative** or **required** and the result would be the same.
 * `2nd`: a subflow with two **alternative** flow elements. Any one of the two will allow the user to log in, as the flow will be successful:
-  * `OTP`: an OTP from a device owned by the user. From here the user can either select `Webauthn` or move back to the `Authenticate with Keycloak` sub-flow.
-  * `Webauthn`: a Webauthn device owned by the user. From here the user can either select `OTP` or move back to the `Authenticate with Keycloak` sub-flow.
+  * `OTP Form`: an OTP from a device owned by the user. From here the user can either select `Webauthn` or move back to the `Username Form`.
+  * `Webauthn`: a Webauthn device owned by the user. From here the user can either select `OTP Form` or move back to the `Username Form`.
 
 An example of a flow which allows the user to choose between password-less and 2 factors would be the following:
-```
-Auth type                         | Requirement
------------------------------------------------------------------------------------------------
-Auto                               [x] Alternative  [ ] Required  [ ] Conditional  [ ] Disabled
-  | - Cookie                       [x] Alternative  [ ] Required                   [ ] Disabled  
-  | - Kerberos                     [x] Alternative  [ ] Required                   [ ] Disabled
-Identity Provider Redirector       [x] Alternative  [ ] Required                   [ ] Disabled  
-Authenticate with Keycloak         [x] Alternative  [ ] Required  [ ] Conditional  [ ] Disabled  
-  | - Username                     [ ] Alternative  [x] Required                   [ ] Disabled
-  | - Authentication               [ ] Alternative  [x] Required  [ ] Conditional  [ ] Disabled
-        | - WebAuthn               [x] Alternative  [ ] Required                   [ ] Disabled
-        | - With Password 2 factor [x] Alternative  [ ] Required  [ ] Conditional  [ ] Disabled
-            | - Password           [ ] Alternative  [x] Required                   [ ] Disabled
-            | - OTP                [ ] Alternative  [x] Required                   [ ] Disabled
-```
-This is similar to the 2 factor authentication. Within the `Authenticate with Keycloak` sub-flow, there are the following changes:
-* There are two **required** flow elements: the `Username` execution and the `Authentication` subflow.
+
+![Single or Two Factor Flow](img/multi-factor-admin-and-step-up/SingleOrTwoFactorFlow.png)
+
+This is similar to the 2 factor authentication, and an example where a user may select an **alternative** subflow. Within the `Authenticate with Keycloak` sub-flow, there are the following changes:
+* There are two **required** flow elements: the `Username Form` execution and the `Authentication` subflow.
 * Within the `Authentication` sub-flow, there are two **alternative** flow elements:
   * `WebAuthn`, an execution which allows here the user to log in in a password-less manner
-  * `With Password 2 factor`, a sub-flow in which both `Password` and `OTP` are **required**, and which therefore will be executed sequentially.
+  * `Password with 2nd factor`, a sub-flow in which both `Password Form` and `OTP Form` are **required**, and which therefore will be executed sequentially. Once reaching the `OTP Form`, the user can move back to the `Password Form`, and from the `Password Form`, the user can move back to the last authentication execution in the previous sub-flow, which in this case would be `WebAuthn`.
 
-The rules defined in the previous section allow all these flows, but the administrator is responsible for defining flows that make sense. For example, the administrator must think carefully if the first element in a flow is not an execution with user interaction, as when returning to a parent flow, if the first element is a flow or an execution without user interaction, it will immediately be processes, which may prevent a user from returning to a further parent flow. Examples of such problematic flows are given in the appendix.
+An example of the use of conditional flows is the following:
+
+![Conditional Alternatives Flow](img/multi-factor-admin-and-step-up/ConditionalAlternatives.png)
+
+This is closer to the standard browser flow, with with the difference being that instead of an **optional** `OTP form`, there's now a **conditional** sub-flow, with three elements:
+* `Conditional Block - User Configured`, a conditional execution which determines if the other authentication executions are configured for a user.
+* `OTP Form`, which will return "configured for" for a user only if that user has an OTP credential configured
+* `WebAuthn`, which will return "configured for" for a user only if that user has an WebAuthn credential configured.
+
+The result is that:
+* If the user has neither OTP nor WebAuthn credential configured, he will be able to log in with only username and password.
+* If the user has only an OTP credential, he will be presented with first the username and password form, and then the OTP form for 2nd factor.
+* If the user has only a Webauthn credential, he will be presented with first the username and password form, and then the WebAuthn form 2nd factor.
+* If the user has both an OTP credential and a WebAuthn credential, he will be presented with first the username and password form, and then with the choice to login either with the OTP form or with the WebAuthn form.
+
+The rules defined in the previous sections allow all these flows, but the administrator is responsible for defining flows that make sense.
 
 ### Multi-token
 
@@ -172,61 +160,56 @@ For multi-token support in keycloak, when an authentication execution uses crede
 -----------------------         ----------------------
 ```
 
-The credential type described here is similar to the current "type" field in the credential table in the database, but more restrictive. The idea is that the type is linked solely to the credential provider: the `CredentialProvider` interface has a `String getType()` method added to it that returns the type of the credential. This could be an arbitrary string that describes the type for example "OTP", but it could also be the canonical name of the Provider class to ensure that names are not reused by accident.
+The credential type described here is similar to the current "type" field in the credential table in the database, but more restrictive. The idea is for an `Authenticator`, the type is obtained from the `CredentialProvider`: the interface has a `String getType()` method added to it that returns the type of the credential. The type itself is a simple String, but which is defined only at a single point in the code, in a child of the `CredentialModel` class. This is detailed later in the document
 
-On the credential side, the value is input in the database when a credential of the corresponding type is recorded by the user. For example, when a user records a new OTP token, whether it is TOTP or HOTP, the type in the database `credential_type` field will always just be "OTP". The "hotp" or "totp" subtype will be recorded in another field. This is detailed later in the document.
+On the credential side, the value is input in the database when a credential of the corresponding type is recorded by the user. For example, when a user records a new OTP token, whether it is TOTP or HOTP, the type in the database `credential_type` field will always just be "OTP". The "hotp" or "totp" subtype will be recorded in another field. This is also detailed later in the document.
 
-On the authentication execution side, classes that implement the methods that require validation of credentials will implement a new `CredentialValidator` interface, which could look something like:
+On the authentication execution side, classes that implement the methods that require validation of credentials will implement a new `CredentialValidator` interface, which is the following:
 ```
 package org.keycloak.authentication;
 
 import org.keycloak.credential.CredentialModel;
 import org.keycloak.credential.CredentialProvider;
+import org.keycloak.models.KeycloakSession;
+import org.keycloak.models.RealmModel;
+import org.keycloak.models.UserModel;
 
 import java.util.List;
 
-public interface CredentialValidator <T extends CredentialProvider> {
-    public T getCredentialProvider(AuthenticationFlowContext context);
-    default public List<CredentialModel> getCredentials(AuthenticationFlowContext context) {
-        return context.getSession().userCredentialManager().getStoredCredentialsByType(context.getRealm(), context.getUser(), getCredentialProvider(context).getType());
+public interface CredentialValidator<T extends CredentialProvider> {
+    T getCredentialProvider(KeycloakSession session);
+    default List<CredentialModel> getCredentials(KeycloakSession session, RealmModel realm, UserModel user) {
+        return session.userCredentialManager().getStoredCredentialsByType(realm, user, getCredentialProvider(session).getType());
+    }
+    default String getType(KeycloakSession session) {
+        return getCredentialProvider(session).getType();
     }
 }
 ```
 
-And the implementation in the class would be, for `OTPFormAuthenticator` for example:
+And the implementation in the class is, for `OTPFormAuthenticator` for example:
 ```
 @Override
-public OTPCredentialProvider getCredentialProvider(AuthenticationFlowContext context) {
-    return context.getSession().getProvider(OTPCredentialProvider.class);
+public OTPCredentialProvider getCredentialProvider(KeycloakSession session) {
+    return (OTPCredentialProvider)session.getProvider(CredentialProvider.class, "keycloak-otp");
 }
 ```
-Having the associated credential provider directly in the class allows the retrieval of the credentials through the `UserCredentialManager` and the type given by the `CredentialProvider`. It also simplifies the validation code a little, as it's no longer necessary to pass by the `UserCredentialManager` to call `isValid()`, but it can be called directly from the associated `CredentialProvider`.
-
-The `Authenticator#configuredFor()` method may become obsolete with this scheme, as it is superseded by the fact that a class extends `CredentialValidator` and the list of credentials that is obtained for the user.
+Having the associated credential provider directly in the class allows the retrieval of the credentials through the `UserCredentialManager` and the type given by the `CredentialProvider`. It also simplifies the validation code a little, as it's no longer necessary to pass by the `UserCredentialManager` to call `isValid()`, but it can (and should) be called directly from the associated `CredentialProvider`.
 
 #### Combining multi-token with multi-factor authentication
 
 During a sub-flow in which a user can choose between authentication executions that extend `CredentialValidator`, the user will directly choose a credential that he has recorded instead of choosing the authentication execution. For example, if a user has three Fido2 devices recorded, and enters the following password-less authentication flow:
-```
-Auth type                         | Requirement
------------------------------------------------------------------------------------------------
-Auto                               [x] Alternative  [ ] Required  [ ] Conditional  [ ] Disabled
-  | - Cookie                       [x] Alternative  [ ] Required                   [ ] Disabled  
-  | - Kerberos                     [x] Alternative  [ ] Required                   [ ] Disabled
-Identity Provider Redirector       [x] Alternative  [ ] Required                   [ ] Disabled  
-Authenticate with Keycloak         [x] Alternative  [ ] Required  [ ] Conditional  [ ] Disabled  
-  | - Username                     [ ] Alternative  [x] Required                   [ ] Disabled
-  | - Authentication               [ ] Alternative  [x] Required  [ ] Conditional  [ ] Disabled
-        | - WebAuthn               [x] Alternative  [ ] Required                   [ ] Disabled
-        | - With Password 2 factor [x] Alternative  [ ] Required  [ ] Conditional  [ ] Disabled
-            | - Password           [ ] Alternative  [x] Required                   [ ] Disabled
-            | - OTP                [ ] Alternative  [x] Required                   [ ] Disabled
-```
-When the user enters the `Authentication` sub-flow he will have the option of choosing between his three Fido2 devices and the `With password 2 factor` sub-flow. Likewise, if the user doesn't have any Fido2 devices recorded, he would only have the choice of the `With password 2 factor` sub-flow.
 
-#### Adding new credential types and authentication executions
+![Single or Two Factor Flow](img/multi-factor-admin-and-step-up/SingleOrTwoFactorFlow.png)
+
+When the user enters the `Authentication` sub-flow he will have the option of choosing between his three Fido2 devices and the `Password with 2nd factor` sub-flow. Likewise, if the user doesn't have any Fido2 devices recorded, he would automatically enter the `Password with 2nd factor` sub-flow.
+
+### Adding new credential types and authentication executions
 
 Currently in keycloak there's only two types of credentials: OTP and Password. However, as other providers are added, there may be more credential types added, starting with WebAuthn. With the proposed changes, adding a new credential type and its associated authentication execution would mean at the least:
+* adding the classes to handle the format of the new credential type in the database. Credentials are now described in json format, the details of which is further described later in the document, but this means:
+  * adding a new child of `CredentialModel` class which contains the string description for the type, and the methods to read and create a credential object of the given type.
+  * adding the classes to marshal and unmarshal the json representation of the credential
 * adding a `CredentialProviderFactory`
 * adding the associated `CredentialProvider`
 * adding a `AuthenticatorFactory`
@@ -234,45 +217,30 @@ Currently in keycloak there's only two types of credentials: OTP and Password. H
 
 When adding a new authentication execution that works for an existing credential type, only the last two steps would be necessary.
 
-Some existing classes could also be refactored correspond this model. For example the classes `UserCredentialModel` and `CredentialModel` which have methods and definitions related to multiple credential types, which would be unnecessary with this model.
+Some existing classes have also been refactored to correspond this model. For example the classes `UserCredentialModel`, which was simplified to conform to its role as a credential input from a user, and `CredentialModel` which was modified to correspond to the new credential format.
 
 ### Authentication section in the admin console
 
 #### Default Flows
 
-The schema described in the logic would be implemented
-in the _Authentication > flows_ section. Some work can be done on the UX to make
-the process more intuitive, but this will be proposed at a later state in the
-design process.
+The schema described in the logic would be implemented in the _Authentication > flows_ section. Some work can be done on the UX to make
+the process more intuitive, but this is not covered by this design.
 
-Keycloak should have the same default flows as is currently the case, except that two
-authentication factors are used, with the following flow for the browser case:
-```
-Auth type                         | Requirement
------------------------------------------------------------------------------------------------
-Auto                               [x] Alternative  [ ] Required  [ ] Conditional  [ ] Disabled
-  | - Cookie                       [x] Alternative  [ ] Required                   [ ] Disabled  
-  | - Kerberos                     [x] Alternative  [ ] Required                   [ ] Disabled
-Identity Provider Redirector       [x] Alternative  [ ] Required                   [ ] Disabled  
-Authenticate with Keycloak         [x] Alternative  [ ] Required  [ ] Conditional  [ ] Disabled  
-  | - Username                     [ ] Alternative  [x] Required                   [ ] Disabled
-  | - 1st                          [ ] Alternative  [x] Required  [ ] Conditional  [ ] Disabled
-       | - Password                [x] Alternative  [ ] Required                   [ ] Disabled
-  | - 2nd                          [ ] Alternative  [x] Required  [ ] Conditional  [ ] Disabled
-       | - OTP                     [x] Alternative  [ ] Required                   [ ] Disabled
-       | - WebAuthn                [x] Alternative  [ ] Required                   [ ] Disabled
-```
+Keycloak should have the same built in flows as is currently the case, except adapted to the new logic.
+For the browser flow:
+![Default Browser](img/multi-factor-admin-and-step-up/DefaultBrowser.png)
 
-And for the Direct Grant the flow would be:
-```
-Auth type                         | Requirement
------------------------------------------------------------------------------------------------
-Username Validation                [ ] Alternative  [x] Required                   [ ] Disabled
-Password                           [ ] Alternative  [x] Required                   [ ] Disabled
-2nd Factor                         [ ] Alternative  [x] Required  [ ] Conditional  [ ] Disabled
-  | - OTP                          [x] Alternative  [ ] Required                   [ ] Disabled
-  | - Other                        [x] Alternative  [ ] Required                   [ ] Disabled
-```
+For the direct grant flow:
+![Default Direct Grant](img/multi-factor-admin-and-step-up/DefaultDirectGrant.png)
+
+For the for the first broker login flow:
+![Default First Broker Login](img/multi-factor-admin-and-step-up/DefaultFirstBrokerLogin.png)
+
+For the http challenge flow:
+![Default HTTP Challenge](img/multi-factor-admin-and-step-up/DefaultHttpChallenge.png)
+
+And for the reset credentials flow:
+![Default Reset Credentials](img/multi-factor-admin-and-step-up/DefaultResetCredentials.png)
 
 #### Bindings
 
@@ -280,21 +248,7 @@ No changes are necessary here.
 
 #### Required Actions
 
-Current required actions are a bit too limited to support multi-tokens. While it is currently
-possible to require a user to, for example, register an OTP device, it must be possible for the
-administrator to require "register a valid 1st factor" and "register a valid 2nd factor".
-
-To do this, it must be possible to register a required action multiple times, and to configure
-required actions. It must also be possible to remove required actions from the list. The code
-of the required action should define if it can be registered multiple times, and how it can
-be configured. However, all required actions should be able to be removed, and removing a
-required action should also remove it from all users for which it is currently required.
-
-The purpose of this is to be able to have a "register credential" required action in which
-credential types can be set. For example, if an admin were to configure a 2nd factor
-with OTP and WebAuthn, he could then set a "register credential" with the OTP and Fido2
-credential types. A user, when confronted with that required action, would only have
-to register one of the two.
+No changes are necessary here, but current required actions may be a bit limited for the the new multi-factor scenario. See the appendix **Future improvements** for possible changes.
 
 #### Policies
 
@@ -302,15 +256,21 @@ Modifications to the policies are not in the scope of this design proposal. Howe
 
 ### Authentication screens for the user in a browser flow
 
-When the user is redirected towards Keycloak, unless he's using some system that bypasses the login actions (e.g. session cookie, kerberos,...) he will first enter his username, and then arrive at a form in two parts:
+When the user is redirected towards Keycloak, unless he's using some system that bypasses the login actions (e.g. session cookie, kerberos,...) he will first enter at the very least his username, and then arrive at a form in two parts:
 1. The first part allows the user to select which credential he wishes to use to login. We will call this the "credential selector". This could for example be a drop down list. This list only contains the credentials that the user can use at his current step in the authentication flow.
 1. The second part is the form corresponding to the currently selected credential.
 
 If a new credential selection is made, the 2nd part of form is changed. For example, if the user has by default the password selection screen, and an alternative is an OTP code, then the user may select his OTP device, and the screen is changed to an OTP form.
 
+![Login Password Selected](img/multi-factor-admin-and-step-up/LoginPasswordSelected.png)
+
+![Login Select Credential](img/multi-factor-admin-and-step-up/LoginSelectCredential.png)
+
+![Login OTP Selected](img/multi-factor-admin-and-step-up/LoginOTPSelected.png)
+
 The default form presented to the user depends of course on what is available at the authentication step the user is currently at, but if there are several authentication executions available there are three rules to take into account:
-1. The user has a possibility to select "preferred credentials". If one of those credentials are available at an authentication step, then the default page presented will correspond to that credential. For example, if the user has set an OTP credential as his preferred login method, and it is allowed, then the initial value of the selection part will be set to that OTP credential, and the OTP form will be displayed.
-1. If the user doesn't have a preferred credential available for an authentication step, then the form displayed will be the highest in the corresponding authentication sub-flow, and if the user has multiple credentials for that authentication execution, then the selected credential in the "credential selector" is the first in the list of credentials returned for the user. For example, if a user has the credentials **OTP home**, **OTP office**, **OTP backup** in that order, and with none selected as preferred, and he arrives in a subflow with "OTP" and "Webauthn" (also in that order), then the user will arrive by default on an OTP form, and in the "credential selector" he will have **OTP home** selected.
+1. The user has a possibility to order his credentials by preference. If one of those credentials are available at an authentication step, then the default page presented will correspond to that credential. For example, if the user has set an OTP credential as his preferred login method, and it is allowed, then the initial value of the selection part will be set to that OTP credential, and the OTP form will be displayed.
+1. If the user doesn't have a preferred credential available for an authentication step, then the form displayed will be the highest in the corresponding authentication sub-flow, and if the user has multiple credentials for that authentication execution, then the selected credential in the "credential selector" is the first in the list of credentials returned for the user. For example, if a user has the credentials **OTP home**, **OTP office**, **OTP backup** in that order, and he arrives in a subflow with "OTP" and "Webauthn" (also in that order), then the user will arrive by default on an OTP form, and in the "credential selector" he will have **OTP home** selected.
 1. In the case of step-up, a client via the SAML protocol can ask for a specific set of credential types. In this case, the first two rules are still valid, but are restricted to the subset asked for by the client. This mechanism will described in more detail in the section on step up mechanisms.
 
 Note that under this new scheme, the system is potentially vulnerable to username enumeration, as entering a username will list the credentials associated with the user. However, this can only be prevented if the first authentication collects both a username and a preset credential (typically a password). With a password-less setup, it is not possible to prevent the username enumeration.
@@ -328,23 +288,22 @@ No database modifications are necessary for these changes.
 ### Changes to the users > Credential menu
 
 Instead of manage Password we have "manage credentials", with a list of credentials
-for a user. The credentials are grouped by credential type, and could indicate which
-authentication flows they are currently valid for. The administrator should
+for a user.  The administrator should
 be able to edit / remove a credential, and in some cases maybe even create a credential.
 
 #### Editing
 
-The administrator should be able to visualise the data of the credential (except any
-secret data) and edit metadata about a device. Data would be any data in the fields of
-the credential that describe immutable data about the credential (secret or not). The
-administrator (and user) would be able to set a label for the device to identify it.
-They would also be able to set a "preferred order" for the credentials. The credential used
+Credentials are now designed to be mostly immutable, aside from those credentials which
+need to update as a part of their mechanism, such as an HOTP's counter.
+The administrator is able to visualise the data of the credential (except any
+secret data). The administrator (and user) is able to set a label for the device to identify it.
+They are also able to set a "preferred order" for the credentials. The credential used
 by default during login will be the "most preferred" credential belonging to a valid
 credential type, at each authentication step.
 
-A note for passwords: Unlike other credentials there should not be more than one password
-that can be configured. Also, among its edition option it should be possible to reset
-(temporarily or not) as is currently the case.
+![Manage Credentials](img/multi-factor-admin-and-step-up/CredentialEdit.png)
+
+A note for passwords: Unlike other credentials there should not be more than one password that can be configured. Since credentials are designed to be mostly immutable, resting a password now means deleting a credential and creating a new one.
 
 #### Deleting
 
@@ -355,24 +314,24 @@ Considering the problems that may result from incorrectly removing a credential,
 the admin GUI should ask for a validation (e.g. "Are you sure?") before doing
 the delete.
 
-If the administrator and user can remove credentials, the possibility to disable
-credentials may no longer be useful. However, there would also be no problem in keeping it.
+The functionality to disable a credential type for a user is removed, since the administrator can now delete any individual credential.
 
 #### Creating
 
 For some credential types, an admin may be able to create a credential.
-The most obvious of these is the password, as is currently the case. The admin may
-create a new password for a user (temporary or not). If one already exists, it
-overwrites the previous one.
+The most obvious of these is the password, as is currently the case. If a user doesn't already have a password, the admin may
+create a new password for a user (temporary or not).
 
-For other credential types, it is up to them to determine if a credential can be created, and to determine how it can be created.
+![Add a Credential](img/multi-factor-admin-and-step-up/CredentialAdd.png)
+
+For other credential types, it is up to them to determine if a credential can be created, and to determine how they can be created.
 
 ### Modifications to the REST API
 
 Currently there's no way to get credentials with the REST API. This should change with these
 modifications to reflect the new options for the administrator. The API should function in the
 same manner as the admin console: Credentials can be exposed (except for secret
-values), the metadata edited and the credentials deleted with the same restrictions as described in the previous section.
+values), the label edited, the preference changed, and the credentials deleted with the same restrictions as described in the previous section.
 
 ### Database modifications
 
@@ -383,7 +342,7 @@ is only relevant for a credential of a specific credential type, for example,
 password credentials contain the salt and the hash iterations, while TOTP may have the
 number of digits and the period. Other credential types will likely have their own set of
 fixed metadata. This data doesn't need to be queried nor modified, therefore the new
-credential table columns could be:
+credential table columns are:
 ```
 -----------------------------
 | ID                        |
@@ -391,6 +350,8 @@ credential table columns could be:
 | user_ID                   |
 -----------------------------
 | credential_type           |
+-----------------------------
+| created_date              |
 -----------------------------
 | user_label                |
 -----------------------------
@@ -400,10 +361,16 @@ credential table columns could be:
 -----------------------------
 ```
 
-With `ID` the primary key of the credential, `user_ID` is the foreign key linking the credential to a user,`credential_type` a string set during the creation that must reference an existing credential type,
-`user_label` being the editable name of the credential by the user (a varchar(N)),
-`secret_data` containing a static json with the information that cannot be transmitted
-outside of Keycloak and the `credential_data` containing a json with the static information of the credential that can be shared in the admin console or via the REST API. It is up to the code linked with an authentication execution to be able to interpret the `secret_data` and `credential_data` correctly.
+Where:
+* `ID` the primary key of the credential.
+* `user_ID` is the foreign key linking the credential to a user.
+* `credential_type` a string set during the creation that must reference an existing credential type.
+* `created_date` being the creation date (in long format) of the credential.
+* `user_label` being the editable name of the credential by the user (a varchar(N)).
+* `secret_data` containing a static json with the information that cannot be transmitted outside of Keycloak
+* `credential_data` containing a json with the static information of the credential that can be shared in the admin console or via the REST API.
+
+It is up to the code linked with an authentication execution to be able to interpret the `secret_data` and `credential_data` correctly. Note that in some cases, `credential_data` or `secret data` cannot be fully static. This is for example the case for HOTP, as the counter needs to be updated.
 
 ## Design proposal for [KEYCLOAK-847](https://issues.jboss.org/browse/KEYCLOAK-847)
 
@@ -483,7 +450,7 @@ authentication mechanisms described previously in the document.
 
 The LoA is specified as markers within the authentication flow, specifically, this is set as an **LoA execution** within an a subflow. For Keycloak this is internally set as a positive numerical value. Any correspondence to an external definition of an LoA is handled through configuration. Passing an **LoA execution** within an authentication flow sets that level for a user. User sessions record both the current highest authentication level used, as well as the credential types used (possibly which credentials have been used instead of the credential types).
 
-For entering a flow for a LoA, the **conditional** requirement is used, with a **conditional execution**. For example, the default 2 factor setup would become:
+For entering a flow for a LoA, the **conditional** requirement is used, with a **conditional execution**. For example, a 2 factor setup would become:
 
 ```
 Auth type                         | Requirement
@@ -511,13 +478,13 @@ Where the value within parentheses indicates the configuration of the component.
 More generally, the LoA configuration for a level N would be:
 * ((LoA < N AND (RequestedLoA >=N OR RequestedLoA < 0)) OR (force AND (RequestedLoA = N OR (LoA < N AND RequestedLoA > N))))
 
-Considering the complexity of this expression, it would be simpler to have a `LoACondition` which is just configured with a value (1, 2, ...).
+Considering the complexity of this expression, it would be simpler to have a `LoACondition` execution which is just configured with a value (1, 2, ...).
 
 We use negative numbers as requested LoA to indicate that a client is requesting the maximal level available in Keycloak.
 
 The problem with this flow is that when requesting a step-up, it is logical that the flow executes from the top. This means that in some cases, certain elements of the flow that are normally encountered during the login must be skipped. For example, if a user is logged in with LoA 1, and the RequestedLoA = 2, then the following flow elements would normally be encountered, and would cause a problem:
 * `Cookie`: Currently the cookie would automatically allow logging in. With the new modifications, it must check if the RequestedLoA <= LoA to validate. However, it must in any case set the context to the user's session.
-* `Identity Provider Redirector`: This element is skipped when there is no identity providers are configured. If there are some configured however, then keycloak should stop here even when there is a step-up, as the user should choose if he wants to perform the authentication via Keycloak or via an external IdP.
+* `Identity Provider Redirector`: This element is skipped when there are no identity providers configured. If there is one configured however, there must be a mechanism to determine if the step-up request is done by the current IDP or by the trusted IDP which was originally logged in to.
 * `Username`: The user should not have to re-input his username. The execution must recognise from the context that the user has already input his name.
 
 ##### Client configuration
@@ -653,6 +620,24 @@ The authentication mechanisms can be combined in different combinations. Example
 
 This appendix has suggestions of improvements in keycloak that are related to this design proposition, but which will not necessarily be accomplished within the scope of the multi-factor and step-up.
 
+#### Required Actions
+
+Current required actions are a bit too limited to support multi-tokens. While it is currently
+possible to require a user to, for example, register an OTP device, it must be possible for the
+administrator to require "register a valid 1st factor" and "register a valid 2nd factor".
+
+To do this, it must be possible to register a required action multiple times, and to configure
+required actions. It must also be possible to remove required actions from the list. The code
+of the required action should define if it can be registered multiple times, and how it can
+be configured. However, all required actions should be able to be removed, and removing a
+required action should also remove it from all users for which it is currently required.
+
+The purpose of this is to be able to have a "register credential" required action in which
+credential types can be set. For example, if an admin were to configure a 2nd factor
+with OTP and WebAuthn, he could then set a "register credential" with the OTP and Fido2
+credential types. A user, when confronted with that required action, would only have
+to register one of the two.
+
 #### OTP policy
 
 OTP policy is currently set within the "Authentication > OTP Policy" page, which makes it realm-wide. It is also limiting in its options, that is, for example, it doesn't allow to have OTP tokens with both 6 digits and 8 digits within the realm. With the advent of multi-factor and multi-token, this design could be modified in the following manners
@@ -697,46 +682,3 @@ A `CredentialProvider` could potentially have more static data associated with i
 #### Encrypted confidential credential data in the databases
 
 It is a best security practice to make sure that confidential data, for example symmetric or private keys, are encrypted in the database, in order to avoid any potential sql injection attack that could reveal the information. With the modification of credentials to support a `secret_data` field and a `credential_data field`, it would be worthwhile to allow users to encrypt the contents of the `secret_data` field when written to the database, and decrypted when read by keycloak.
-
-### Authentication Flow examples
-
-This section describes examples of how the authentication flow works with the multi-factor and step-up mechanisms.
-
-#### Example 1
-
-An example of a 2 factor similar to the one presented in the "Flow logic examples" section. The difference here is that the `Password` is not in a **required** sub-flow but directly within the `Authenticate with Keycloak` sub-flow. Functionally, this is almost the same as having it within the subflow, with the exception that it not possible from here to return to the username selection, as it is not possible to have a selection between **required** flow elements.
-```
-Auth type                         | Options
------------------------------------------------------------------------------------------------
-Auto                               [x] Alternative  [ ] Required  [ ] Conditional  [ ] Disabled
-  | - Cookie                       [x] Alternative  [ ] Required                   [ ] Disabled  
-  | - Kerberos                     [x] Alternative  [ ] Required                   [ ] Disabled
-Identity Provider Redirector       [x] Alternative  [ ] Required                   [ ] Disabled  
-Authenticate with Keycloak         [x] Alternative  [ ] Required  [ ] Conditional  [ ] Disabled  
-  | - Username                     [ ] Alternative  [x] Required                   [ ] Disabled
-  | - Password                     [ ] Alternative  [x] Required                   [ ] Disabled
-  | - 2nd                          [ ] Alternative  [x] Required  [ ] Conditional  [ ] Disabled
-       | - OTP                     [x] Alternative  [ ] Required                   [ ] Disabled
-       | - WebAuthn                [x] Alternative  [ ] Required                   [ ] Disabled
-```
-
-#### Example 2
-
-This example is a variant of the "password-less" flow in the "Flow logic examples". However, since the `Authentication` sub-flow has two sub-flows and no execution that requires user interaction, there is no way to go back from the `WebAuthn` execution to the `Username` selection.
-
-```
-Auth type                         | Requirement
------------------------------------------------------------------------------------------------
-Auto                               [x] Alternative  [ ] Required  [ ] Conditional  [ ] Disabled
-  | - Cookie                       [x] Alternative  [ ] Required                   [ ] Disabled  
-  | - Kerberos                     [x] Alternative  [ ] Required                   [ ] Disabled
-Identity Provider Redirector       [x] Alternative  [ ] Required                   [ ] Disabled  
-Authenticate with Keycloak         [x] Alternative  [ ] Required  [ ] Conditional  [ ] Disabled  
-  | - Username                     [ ] Alternative  [x] Required                   [ ] Disabled
-  | - Authentication               [ ] Alternative  [x] Required  [ ] Conditional  [ ] Disabled
-        | - password-less          [x] Alternative  [ ] Required                   [ ] Disabled
-            | - WebAuthn           [ ] Alternative  [x] Required                   [ ] Disabled
-        | - With Password 2 factor [x] Alternative  [ ] Required  [ ] Conditional  [ ] Disabled
-            | - Password           [ ] Alternative  [x] Required                   [ ] Disabled
-            | - OTP                [ ] Alternative  [x] Required                   [ ] Disabled
-```

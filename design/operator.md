@@ -1,9 +1,11 @@
 # Observerability
 
-* **Status**: PoC
-* **Author**: [slaskawi](https://github.com/slaskawi)
+* **Status**: Notes
 * **JIRA**: [KEYCLOAK-10036](https://issues.jboss.org/browse/KEYCLOAK-10036)
-* **PoC video**: https://www.youtube.com/watch?v=nGsARoHk_Dw
+
+
+## PoC Video
+https://www.youtube.com/watch?v=nGsARoHk_Dw
 
 ## Motivation
 

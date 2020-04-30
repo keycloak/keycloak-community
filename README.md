@@ -5,27 +5,19 @@ Keycloak is an Open Source Identity and Access Management solution for modern Ap
 This repository contains community related information around Keycloak, including proposals for new features and enhancements.
 
 
-## Help and Documentation
+## Contents
 
-* [Documentation](https://www.keycloak.org/documentation.html)
-* [User Mailing List](https://lists.jboss.org/mailman/listinfo/keycloak-user) - Mailing list for help and general questions about Keycloak
-* [JIRA](https://issues.jboss.org/projects/KEYCLOAK) - Issue tracker for bugs and feature requests
+### [Proposals](design)
 
+Proposals for larger new features to be added to Keycloak.
 
-## Reporting Security Vulnerabilities
+### [Specfications](specifications)
 
-If you've found a security vulnerability, please look at the [instructions on how to properly report it](http://www.keycloak.org/security.html)
+Review of currently implemented specifications and specifications that should be considered.
 
+### [Library](library)
 
-## Reporting an issue
-
-If you believe you have discovered a defect in Keycloak please open an issue in our [Issue Tracker](https://issues.jboss.org/projects/KEYCLOAK).
-Please remember to provide a good summary, description as well as steps to reproduce the issue.
-
-
-## Contributing
-
-Before contributing to Keycloak please read our [contributing guidelines](CONTRIBUTING.md).
+Collection of resources to learn about technologies relevant to Keycloak.
 
 
 ## Other Keycloak Projects

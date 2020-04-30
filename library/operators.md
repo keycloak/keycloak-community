@@ -1,4 +1,4 @@
-# Operator's Library
+# Kubernetes Operators
 
 A curated list of resources to learn about Operators and Go
 
