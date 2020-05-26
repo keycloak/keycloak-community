@@ -4,7 +4,7 @@ In the current console, there are 2 methods to add mappers. Users can add builti
 
 In this document, there are two parts. The first is  how to add new mappers. We used a preliminary toggle to choose how to add one or more mappers. Second, there are some new designs about how to configure a new mapper based on 3 specific mapper types.
 
-### Two methods of adding mappers
+## Two methods of adding mappers
 ![add-mapper](./images/add-mapper.png)
 Users can click the preliminary toggle and there are two methods for them: (1)add mapper from predefined mappers and (2)add mapper by configuration.
 * Add mapper from predefined mappers. There are some predefined mappers provided by Keycloak for users to choose from.
@@ -20,7 +20,7 @@ Users can click the preliminary toggle and there are two methods for them: (1)ad
   * Notes: Edit the mapper. After saving the new mapper or clicking the mapper name in the mapper list, users can edit the mapper, like the picture below. The label indicates the mapper type.
   ![edit](./images/edit.png)
 
-### Configuration of three mapper types
+## Configuration of three mapper types
 * Mapper type - User address: This is a long form. In the new design, ID token, access token and userinfo have been grouped in a row.
 ![User-address](./images/User-address.png)
 

@@ -6,4 +6,4 @@ This website only records the main changes. The whole prototype can be accessed 
 
 * [List and create](https://marvelapp.com/a769ce8/screen/66281011)
 * [Mappers](https://marvelapp.com/a769ce8/screen/69376118)
-* [Scopes](https://marvelapp.com/a769ce8/screen/66655827) （This function is similar to “[Service account roles](https://marvelapp.com/7gb4j6h/screen/66528272)” feature in Clients which had already been done.）
+* [Scopes](https://marvelapp.com/a769ce8/screen/66655827) (This function is similar to “[Service account roles](https://marvelapp.com/7gb4j6h/screen/66528272)” feature in Clients)
