@@ -1,4 +1,4 @@
-# Client scope feature in Admin Console
+# Client scopes feature in Admin Console
 
 ## Scope tab
 
@@ -22,7 +22,7 @@ Click the “Assign” button will trigger a Modal of available roles which allo
 ![clientscope - scope](./images/popoverhint.png)
 
 
-* Assign new scope page - Modal format with table and pagination
+* Assign new scope page - Modal format with table and pagination.
 * Filters on role name and origins.
 
 ![clientscope - scope](./images/Clientscopes-scope2.png)
