@@ -1,6 +1,6 @@
 # Keycloak X - Storage
 
-* **Status**: Notes
+* **Status**: Obsoleted by [Store architecture](storage-architecture.md)
 * **JIRA**: TBD
 
 ## What we have today
