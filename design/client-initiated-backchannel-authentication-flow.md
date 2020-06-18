@@ -85,10 +85,64 @@ Keycloak's existing Token Endpoint basically follows [10.1. Token Request Using 
 
 On CIBA Protocol specification Section [7.1. Authentication Request](https://openid.net/specs/openid-client-initiated-backchannel-authentication-core-1_0.html#auth_request) :
 
-  - Request Parameters
-    * login_hint       : supported
-    * login_hint_token : NOT supported
-    * id_token_hint    : NOT supported
+#### Request Parameters for user info conveyance
+
+- login_hint       : supported
+  - User Resolver : keycloak provides the resolver for the following information
+    - username
+    - email
+  - Encryption : this resolver support encryption for them by using client secret with AES128/192/256bit
+
+- login_hint_token : supported
+  - User Resolver : keycloak provides the resolver for the following token
+    - Format : JWT
+    - Profile : refer to "AuthN/AuthZ User Resolver" section.
+    - User Information
+      - username
+      - email
+  - Integrity Protection/Message Authentication : JWS (client signed)
+    - optional
+    - algorithm : ES256/384/512, PS256/384/512, RS256/384/512
+  - Encryption : JWE
+    - not supported. (supported in the future)
+
+- id_token_hint    : supported
+  - PPID support for "sub"
+
+#### Request Parameters related to user info conveyance
+
+- request (signed authentication request) : supported
+- user_code : supported
+
+##### Notes for user info conveyance
+
+There are two types of representation for conveying user to be authenticated from a client (CD) to keycloak :
+
+- public or guessable
+
+  It can be acquired from public sources (e.g. name, phone number).
+
+  Even if cannot be acquired from public sources, it is easy to guess (e.g. email address).
+
+- not public and not guessable
+
+  It cannot be acquired from public source and hard to guess (e.g. UserModel's ID in keycloak internal).
+
+Considering security, we pay attention to the following points :
+
+- Unsolicited backchannel authentication request by a malicious user (impersonation)
+  - public or guessable user information is vulnerable to this attack.
+  - Regardless of the way of conveying user to be authenticated, User Code seems to be effective countermeasure.
+- Unsolicited backchannel authentication request by a malicious other client to attack other victim client (replay, forge legitimate backchannel authentication request)
+  - PPID seems to be effective countermeasure.
+  - Encryption seems to be effective countermeasure.
+  - Signed JWT seems to be effective countermeasure.
+  - Regardless of the way of conveying user to be authenticated, User Code seems to be effective countermeasure.
+- Unsolicited backchannel authentication request by a malicious client itself (keep user's user_code and other authentication related information once this client tried CIBA flow with this user, forge legitimate backchannel authentication request)
+  - No principle effective countermeasure by keycloak seems not to exist (but might be my misunderstanding). Using binding message and the end user being taking extra precaution on it seems to be only the way to prevent it.
+- PII leakage on the wire
+  - PID seems to be effective countermeasure.
+  - Encryption seems to be effective countermeasure.
 
 #### Backchannel Token Delivery Modes
 
