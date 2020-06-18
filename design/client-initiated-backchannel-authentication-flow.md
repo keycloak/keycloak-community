@@ -179,7 +179,7 @@ On CIBA Protocol specification Section [4. Registration and Discovery Metadata](
 
 #### User Code
 
-On CIBA Protocol specification Section [7.1. Authentication Request](https://openid.net/specs/openid-client-initiated-backchannel-authentication-core-1_0.html#auth_request), User Code is NOT supported.
+On CIBA Protocol specification Section [7.1. Authentication Request](https://openid.net/specs/openid-client-initiated-backchannel-authentication-core-1_0.html#auth_request), User Code is supported.
 
 #### Requested Expiry
 
