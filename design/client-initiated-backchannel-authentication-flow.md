@@ -18,7 +18,9 @@ CIBA protocol is utilized by the following security profiles:
 
 ## Scope
 
-This design document does not cover all features defined in CIBA protocol specification. As the first step toward supporting full-fledged CIBA protocol specification, this design document covers only some parts of features defined in CIBA protocol specification. The details are shown in "Inside CIBA Protocol" section.
+This design document does not cover all features defined in [CIBA protocol specification](https://openid.net/specs/openid-client-initiated-backchannel-authentication-core-1_0.html). As the first step toward supporting full-fledged CIBA protocol specification, this design document covers only some parts of features defined in CIBA protocol specification. The details are shown in "Inside CIBA Protocol" section.
+
+This design document covers all features defined in [FAPI CIBA profile](https://openid.net/specs/openid-financial-api-ciba-ID1.html) so as to make keycloak become [Certified FAPI CIBA OpenID Provider](https://openid.net/certification/) in the future.
 
 After accomplishing this first step, additional features support will be treated by the next versions of this design document.
 
