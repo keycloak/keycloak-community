@@ -217,7 +217,7 @@ To configure inside CIBA part's operation, CIBA policy is introduced as part of 
 
 #### CIBA Policy
 
-The following items defined in CIBA protocol specification can be configured per realm :
+The following items defined in CIBA protocol specification can be configured per realm as default but overridden per client :
 
 * backchannel_token_delivery_mode : fix "poll"
 * expires_in
