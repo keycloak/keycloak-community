@@ -193,6 +193,10 @@ On CIBA Protocol specification Section [7.1.1. Signed Authentication Request](ht
 
 On CIBA Protocol specification Section [10.1. Token Request Using CIBA Grant Type](https://openid.net/specs/openid-client-initiated-backchannel-authentication-core-1_0.html#rfc.section.10.1), Long Polling is not supported at this time but will be supporeted in the future.
 
+#### Multiple ADs per user
+
+It does not mention explicitly in the CIBA Protocol specification but there might be the case that some use case requires registering multiple ADs. It is not supported at this time but will be supported in the future.
+
 ### Outside CIBA Protocol
 
 The process of AuthN/AuthZ by AD is highly use-cases dependent (e.g. Push notification to the end-user's smart device, SMS message to the end-user's smart device, etc.).
