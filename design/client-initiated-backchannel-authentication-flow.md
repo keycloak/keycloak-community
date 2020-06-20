@@ -187,7 +187,7 @@ On CIBA Protocol specification Section [7.1. Authentication Request](https://ope
 
 #### Signed Authentication Request
 
-On CIBA Protocol specification Section [7.1.1. Signed Authentication Request](https://openid.net/specs/openid-client-initiated-backchannel-authentication-core-1_0.html#signed_auth_request), Signed Authentication Request is NOT supported.
+On CIBA Protocol specification Section [7.1.1. Signed Authentication Request](https://openid.net/specs/openid-client-initiated-backchannel-authentication-core-1_0.html#signed_auth_request), Signed Authentication Request supported.
 
 ### Outside CIBA Protocol
 
