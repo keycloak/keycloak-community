@@ -477,7 +477,7 @@ There are three options considered :
 
 3 can partially satisfies CIBA protocol specification but no traffic is exchanged among nodes in the cluster due to this token request throttling. However, it seems that keycloak does not prepare such collection so that implementing it or introducing some kind of OSS is required.
 
-In this time, 2 is to be realized.
+In this time, 3 is to be realized to avoid using new cache layer and its associated traffic among nodes.
 
 ## Extensibility
 
