@@ -149,8 +149,8 @@ Considering security, we pay attention to the following points :
 On CIBA Protocol specification Section [5. Poll, Ping and Push Modes](https://openid.net/specs/openid-client-initiated-backchannel-authentication-core-1_0.html#rfc.section.5) :
 
 * poll : supported
-* ping : NOT supported
-* push : NOT supported
+* ping : NOT supported at this time but will be supported in the future
+* push : NOT supported at this time but will be supported in the future
 
 #### Token Request Throttling
 
