@@ -340,7 +340,6 @@ To do these tasks, the following information need to be passed from Backchannel 
 * Backchannel Authentication Expiry
   - expires_in (from Backchannel Authentication Response parameters)
 * Auth Result ID
-* auth_req_id
 
 #### From AuthN/AuthZ by AD part to Backchannel Auth Req/Res part
 
@@ -389,30 +388,30 @@ There are several ways of AuthN/AuthZ by AD (e.g. push notification to an androi
 Considering this point, this default implementation delegates AuthN/AuthZ by AD to other entity called here "Decoupled Auth Server" outside keycloak. It assumes that this Decoupled Auth Server is under control by an administrator of keycloak.
 
 ```
----------------------------------+              +-----------+
-| keycloak                       |              | Decoupled |
-|  +--------------------------+  |              | Auth      |
-|  | Outside CIBA             |  |              | Server    |
-|  |  +--------------------+  |  | (i) POST     |           |
-|  |  | AuthN/AuthZ by AD  | --[auth_req_id]--> |           |
-|  |  |                    | <-[auth_req_id]--- |           |
-|  |  +--------------------+  |  |    (ii) POST |           |
-|  +------------|-------------+  |              |           | 
-|         (iii) |                |              |           |
-|         [Auth Result ID]       |              |           |
-|               V                |              |           |
-|     +--------------------+     |              |           |
-|     | Auth Result Cache  |     |              |           |
-|     |                    |     |              |           |
-|     +--------------------+     |              |           |
-+--------------------------------+              +-----------+
+---------------------------------+                 +-----------+
+| keycloak                       |                 | Decoupled |
+|  +--------------------------+  |                 | Auth      |
+|  | Outside CIBA             |  |                 | Server    |
+|  |  +--------------------+  |  | (i) POST        |           |
+|  |  | AuthN/AuthZ by AD  | --[Auth Result ID]--> |           |
+|  |  |                    | <-[Auth Result ID]--- |           |
+|  |  +--------------------+  |  |    (ii) POST    |           |
+|  +------------|-------------+  |                 |           | 
+|         (iii) |                |                 |           |
+|         [Auth Result ID]       |                 |           |
+|               V                |                 |           |
+|     +--------------------+     |                 |           |
+|     | Auth Result Cache  |     |                 |           |
+|     |                    |     |                 |           |
+|     +--------------------+     |                 |           |
++--------------------------------+                 +-----------+
 ```
 
-(i)   : keycloak sends to Decoupled Auth Server an AuthN/AuthZ by AD request with "auth_req_id" bound with "Auth Result ID".
+(i)   : keycloak sends to Decoupled Auth Server an AuthN/AuthZ by AD request with "Auth Result ID".
 
-(ii)  : After completion of AuthN/AuthZ by AD, Decoupled Auth Server sends to keycloak the results of AuthN/AuthZ by AD with "auth_req_id".
+(ii)  : After completion of AuthN/AuthZ by AD, Decoupled Auth Server sends to keycloak the results of AuthN/AuthZ by AD with "Auth Result ID".
 
-(iii) : After receiving the results of AuthN/AuthZ by AD, AuthN/AuthZ by AD part pushes this result to Auth Result Cache with "Auth Result ID" bound with "auth_req_id" issued to CD.
+(iii) : After receiving the results of AuthN/AuthZ by AD, AuthN/AuthZ by AD part pushes this result to Auth Result Cache with "Auth Result ID".
 
 AuthN/AuthZ by AD part's necessary tasks is as follows :
 
@@ -438,9 +437,9 @@ application/x-www-form-urlencoded
 
 ##### Form Data
 
-* auth_req_id
+* auth_result_id
 
-  "auth_req_id" issued to CD.
+  "Auth Result ID" bound with "auth_req_id" issued to CD.
 
 * binding_message
 
