@@ -11,7 +11,7 @@ This repository contains community related information around Keycloak, includin
 
 Proposals for larger new features to be added to Keycloak.
 
-### [Specfications](specifications)
+### [Specifications](specifications)
 
 Review of currently implemented specifications and specifications that should be considered.
 
