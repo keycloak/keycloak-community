@@ -1,6 +1,6 @@
 # User Event SPI
 
-* **Status**: Draft v0.1
+* **Status**: Draft v0.2
 * **Author**: [vmuzikar](https://github.com/vmuzikar)
 
 ## Motivation
@@ -40,6 +40,9 @@ before persisting any changes.
 
 Post-event is an event that is fired after a User Action has finished completely and all changes are persisted.
 
+"The SPI" in this context is not strictly a single SPI (single interface) but rather a set of multiple SPIs (listeners,
+handlers, etc.), most of which are private.
+
 ### Event types
 
 * User is created manually through admin endpoints
@@ -67,7 +70,8 @@ If a listener supports events interception, it needs to explicitly approve or re
 either synchronously (the approve/reject decision is made right away by the listener), or the listener can signal that
 the decision is delegated for asynchronous processing. Notice that not all event types support interaction.
 
-**When an event is approved** the SPI doesn't interfere with the User Action in any way.
+**When an event is approved:**
+* The SPI doesn't interfere with the User Action in any way.
 
 **When an event is rejected:**
 * The SPI throws an exception.
@@ -77,16 +81,35 @@ the decision is delegated for asynchronous processing. Notice that not all event
 * The SPI stores any necessary data (representations, etc.) required later in case this event is approved.
 * The SPI throws an exception.
 * Based on this exception the User Action is intercepted and some meaningful error message is sent.
-* A one-time token is created. The token is used later by an external system to approve or reject this event.
-* The listener informs the external system that approval is required.
+* The listener informs the external system that approval is required and sends all necessary details to it, mainly an ID
+  that uniquely identifies the request.
 * Later the external system approves or rejects the event. The SPI is then responsible for "resuming" the User Action
   in case it's approved.
+
+**Approving or rejecting a delegated event:**
+* The external system sends a POST request to a Keycloak REST endpoint.
+  * The URL path will include the previously generated unique ID.
+  * The body of the request must be a JWT and must include a boolean indicating whether the User Action was approved or
+    rejected. The JWT must be signed by the external system.
+  * Alternatively, plain JSON can be used instead of JWT. In this case, a shared secret must be included in the `Authorization`
+    header of the HTTP request.
+* If the User Action was approved, the SPI performs the approved action based on the previously stored data (representations,
+  etc.), e.g. updates the user email to the approved address. A post-event is fired.
+* If it was rejected, the SPI just performs some cleanup.
+
+#### Handling multiple approvals or rejections for a single event
+A single pre-event can be evaluated by multiple listeners. There'll be two decision strategies (similarly to authorization
+services):
+* `Affirmative`: a single approval is enough for the User Action to be approved.
+* `Unanimous`: all listeners must approve the User Action in order for it to be performed.
+
+This behaviour can be configured in the Admin Console.
 
 ### Simplified code snippets
 
 Event listener:
 ```java
-public class FooBarListener implements UserEventProvider {
+public class FooBarListener implements UserEventListener {
 
     ...
 
@@ -96,8 +119,8 @@ public class FooBarListener implements UserEventProvider {
             String current = updateBasicInfoEvent.getCurrent().getEmail();
             String suggested = updateBasicInfoEvent.getSuggested().getEmail();
             if (!current.equals(suggested)) {
-                String token = event.delegate("Email changes require admin approval");
-                startBPMSProcess(event, token);
+                String id = event.delegate("Email changes require admin approval");
+                startBPMSProcess(event, id);
             }
         }
         else {
@@ -116,6 +139,10 @@ public class UserResource {
     ...
 
     public Response updateUser(final UserRepresentation rep) {
+        ...
+        // perform validations
+        ...
+
         try {
             userEvents.updateBasicInfoPreEvent(user, rep);
         }
@@ -137,7 +164,42 @@ public class UserResource {
 }
 ```
 
-#### Integration with Red Hat Process Automation Manager (former BPMS)
+### Default Event Listener implementations
+
+#### Cloud Events
+
+Any pre- and post-event can be sent in form of a [Cloud Event](https://github.com/cloudevents/spec). Keycloak acts only
+as a `Producer` (i.e. Cloud Events will be used only for sending events, not for approving pre-events by an external
+system) and supports the [JSON Event Format](https://github.com/cloudevents/spec/blob/master/json-format.md) together
+with [HTTP 1.1 Web Hooks for Event Delivery](https://github.com/cloudevents/spec/blob/master/http-webhook.md).
+
+The listener can be configured through Admin Console. Any `Consumer` accepting JSON format must be registered with delivery
+target (a URL) and a shared key to be used as an [Authorization](https://github.com/cloudevents/spec/blob/master/http-webhook.md#3-authorization)
+method. It's possible to configure the registered `Consumer` to receive only selected pre/post-events.
+
+This listener will be completely async to comply with the specification (e.g. [`Retry-After` response](https://github.com/cloudevents/spec/blob/master/http-webhook.md#22-delivery-response)).
+
+##### Example message
+```json
+{
+    "specversion" : "1.x-wip",
+    "type" : "org.keycloak.events.pre.user.updatebasicinfo",
+    "source" : "https://my-keycloak-instance/auth/realms/test-realm",
+    "id" : "47124910-e3c3-11ea-87d0-0242ac130003",
+    "time" : "2020-08-21T17:31:46Z",
+    "datacontenttype" : "application/json",
+    "data" : {
+        "current" : {
+            // current user rep
+        },
+        "suggested" : {
+            // changed fields in user rep
+        }
+    }
+}
+```
+
+#### Red Hat Process Automation Manager (former BPMS)
 
 The external system the events are delegated to can be BPMS. The implementation for this will be in form of a Quickstart
 Guide. There'll be an example listener that'll be able to start a process in BPMS.
