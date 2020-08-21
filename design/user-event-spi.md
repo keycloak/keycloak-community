@@ -52,7 +52,7 @@ handlers, etc.), most of which are private.
 * User self-registers through an IdP, i.e. logs in for the first time
 * Admin adds a federation link
 * Admin removes a federation link
-* User logs in using federation for the first time
+* User is created using federation
 * User is added to a group (through admin endpoints)
 * User is removed from a group (through admin endpoints)
 * User has a realm or client role assigned (through admin endpoints)
