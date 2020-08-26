@@ -207,7 +207,7 @@ Design proposal: [https://github.com/keycloak/keycloak-community/pull/6]
 > This specification defines how an OpenID Authentication 2.0 Relying Party can migrate the user from OpenID 2.0 identifier to OpenID Connect Identifier by using an ID Token that includes the OpenID 2.0 verified claimed ID. In this specification, the method to request such an additional claim and the method for the verification of the resulting ID Token is specified.
 
 
-#### [JSON Web Token (JWT) Profile for OAuth 2.0 Access Tokens](https://tools.ietf.org/html/draft-ietf-oauth-access-token-jwt-03)
+#### [JSON Web Token (JWT) Profile for OAuth 2.0 Access Tokens](https://tools.ietf.org/html/draft-ietf-oauth-access-token-jwt-07)
 
 > This specification defines a profile for issuing OAuth 2.0 access
      tokens in JSON web token (JWT) format.  Authorization servers and
