@@ -102,17 +102,22 @@ paths:
 
 As we can see, with minimal effort it is possible to produce a JSON document that describes the functionalities of our API and can be used as a foundation for UI tools like Swagger to visualize and interact with our APIs. This document is served as a static file.
 
-## Swagger UI
+## Generating static HTML files
 
-Swagger UI allows developers to visualize and generate documentation based on the OpenAPI specification. There are several ways of doing this:
+Once we provide the OpenAPI document, any tool should be able to generate documentation based on it.
+Considering usability and how simple is to generate/deploy documentation, the recommended choice to generate documentation file is [ReDoc](https://github.com/Redocly/redoc#some-real-life-usages).
+The same tool used by [Apicurio](https://www.apicur.io/) and other [companies](https://github.com/Redocly/redoc#some-real-life-usages).
 
-1. Inserting the URL in the [Swagger generator](https://generator.swagger.io/) which is available online. For example: http://localhost:8080/auth/openapi
-2. Spinning up a Docker image: 
+Generate static HTML files with redoc-cli is pretty straightforward:
+
 ```
-docker pull swaggerapi/swagger-ui
-docker run -p 80:8080 swaggerapi/swagger-ui
-```   
-3. [Swagger Codegen](https://github.com/swagger-api/swagger-codegen#building). The best way to generate static HTML files for documentation.
+npm i -g redoc-cli
+redoc-cli bundle http://localhost:8080/openapi
+```
+
+## Another alternatives 
+
+Swagger Generator is one of the several tools online to visualize and generate documentation based on the OpenAPI specification. Accessing [Swagger generator](https://generator.swagger.io/) in the browser, people should be able to insert `http://localhost:8080/auth/openapi` and see the live documentation.
 
 ## Implementation plan
 
@@ -130,4 +135,7 @@ The items below were included as nice to have because it's fairly easy to get th
 
 * Generate static HTML files for the REST API
 * Generate static OpenAPI document and add to the release distribution
+
+### Acknowledgements
   
+Thanks [Eric Wittmann](https://github.com/EricWittmann) for all the suggestions.
