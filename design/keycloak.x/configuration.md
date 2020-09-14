@@ -168,16 +168,29 @@ properties it supports. This will allow including SPI/provider specific configur
 
 ## Property replacement
 
-When setting the value of a property it is possible to include other properties or environment variables in the value. 
+When setting the value of a property it is possible to include system properties or environment variables in the value. 
 
-Including a property:
+Including a system property:
 ```
-spi.hostname.custom.url=${hostname.frontend-url}
+spi.hostname.custom.url=${myKcUrl}
 ```
+
+For example this would be used with: 
+```
+kc.sh start -DmyKcUrl=https://mykeycloak.com
+```
+
+Note: Do not use system properties with the prefix `kc.` as these are reserved for future use.
 
 Including environment variables:
 ```
 spi.hostname.custom.url=${env.MY_KC_URL}
+```
+
+For example this would be used with: 
+```
+export MY_KC_URL=https://mykeycloak.com
+kc.sh start
 ```
 
 It is also possible to use alternatives, including a fallback:
