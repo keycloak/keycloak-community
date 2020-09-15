@@ -20,3 +20,5 @@
   * [List](/RealmRoles/list.md)
   * [Manage users in role](/RealmRoles/manage-users.md)
   * [Composite role](/RealmRoles/composite-role.md)
+
+* [**Sessions**](/Sessions/sessions.md)
