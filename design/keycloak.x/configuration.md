@@ -1,6 +1,6 @@
 # Keycloak.X Server Configuration
 
-* **Status**: Final #1
+* **Status**: Draft #2
 
 ## How To Set Configuration
 
