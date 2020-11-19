@@ -373,6 +373,19 @@ By default only supported features are enabled. In addition there are some suppo
 To enable non-supported features you can either enable individual features or change the feature level with `--features=<level>`. 
 For example `--features=preview` would enable all preview and deprecated features.
 
+### Health and metrics
+
+Enabling/disabling health and metrics information is done with `metrics.enabled=true|false`.
+
+When enabled, the application will expose the following endpoints:
+
+* `/health`
+* `/health/live`
+* `/health/ready`
+* `/metrics`
+
+This feature is disabled by default.
+
 ## Show Configuration
 
 Keycloak can read configuration properties from multiple sources (environment variables, CLI, and property files). In addition to 
