@@ -32,7 +32,8 @@ names should follow the following rules:
 * Use dot (`.`) for separation
 * All options must be in a category (`<category-name>.<property-name>`)
 * Multiple levels of categories are permitted (`<category-name>.<sub-category-name>.<property-name>`)
-* Avoid camelCase
+* Use only lowercase characters
+* Avoid camel-case
 
 Rules for converting property keys to different formats follow these rules:
 
@@ -57,13 +58,14 @@ Properties for providers follow the following format:
 For example:
 
     spi.myspi.myprovider.some-property=https://mykeycloak
-    spi.my-spi.my-provider.some-property=https://mykeycloak
     
 ### Enable/Disable Provider
 
 To enable/disable a provider use `spi.<spi-name>.<provider-name>.enabled=true|false`.
 
-By default, only the providers we find necessary are marked as enabled when building the distribution are available. In order to disable a provider, it is necessary to run the `config` command so that the provider is excluded from the runtime. The same goes when enabling a provider that was previously disabled. For instance:
+By default, only the providers we find necessary are marked as enabled when building the distribution are available. 
+In order to disable a provider, it is necessary to run the `config` command so that the provider is excluded from the runtime. 
+The same goes when enabling a provider that was previously disabled. For instance:
 
     kc.[sh|bat] --spi-myspi-myprovider-enabled=false config
     
@@ -117,7 +119,7 @@ starting new instances.
 ### Static Properties
 
 Some configuration properties can only bet set when configuring the server (build time configuration) and as such any attempt to change these properties must be
-done through the `config` command. Example of a static property is the database vendor, while 
+done through the `config` command. Example of a static property is changing the db type (--db=postgres for example). 
 
 In the JVM distribution we will support a quick "re-build" directly that allows updating static properties easily.
 
@@ -174,13 +176,12 @@ Configuration Options
 Commands
 
   config       Update the server configuration
+  options      Display the list of all command-line options
   show-config  Print out the current configuration
   start        Start the server
+  start-dev    Start the server with the dev profile
 
 Use "kc.sh <command> --help" for more information about a command.
-Use "kc.sh options" for a list of all command-line options.
-by Red Hat
-
 ```
 
 Documentation of properties should clearly mention what type a property is. Most likely have two separate sections for
@@ -194,14 +195,15 @@ Usage: kc.sh config [OPTIONS]
 Updates configuration that requires a rebuild of Keycloak
 
 Options:
-  --db-vendor        Set the database vendor, available options are h2-file, h2-mem, mariadb, mssql, mysql, oracle, postgres. Default is h2-file.  
+  --db        Set the database type, available options are h2-file, h2-mem, mariadb, mssql, mysql, oracle, postgres. Default is h2-file.  
 ```
 
-To list dynamic configuration properties run `kc.[sh|bat] run --help`, which will output something like:
+To list dynamic configuration properties run `kc.[sh|bat] start --help`, which will output something like:
 
 ```
-Usage: kc.sh config [-hV]
-Update the server configuration
+Usage: kc.sh start [OPTIONS]
+
+Starts Keycloak
 
   --db-url                            Set the database JDBC URL (default depends on database-vendor which allows setting hostname, 
                                       database, etc. as individual properties)
@@ -314,7 +316,7 @@ both the prefix and the character that separates multiple values depend on the d
 ### HTTP
 
 Keycloak will use a secure by default approach and require `http` to be explicitly enabled. `http` can also be enabled
-by enabling `profile.devMode`, or with the `proxy.mode` option.
+by using the dev profile, or with the `proxy.mode` option.
 
 If `https` is enabled and no certificate is configured Keycloak will show a warning. It will not generate a self-signed
 certificate like the old Keycloak distribution does.
@@ -357,24 +359,49 @@ reverse proxy is only forwarding the requests to the Keycloak server so that sec
  
 ### Features
 
-Enabling/disabling individual features are done with `feature.<featureName>=enabled|disabled`.
+Enabling/disabling individual features are done with `features.<featureName>=enabled|disabled`.
 
-To enable a group of features such as technology preview features, use `feature=preview`.
+Individual features have the following different support levels:
+
+* supported
+* deprecated
+* preview
+* experimental
+
+By default only supported features are enabled. In addition there are some supported features that are not enabled out of the box.
+
+To enable non-supported features you can either enable individual features or change the feature level with `--features=<level>`. 
+For example `--features=preview` would enable all preview and deprecated features.
+
+### Health and metrics
+
+Enabling/disabling health and metrics information is done with `metrics.enabled=true|false`.
+
+When enabled, the application will expose the following endpoints:
+
+* `/health`
+* `/health/live`
+* `/health/ready`
+* `/metrics`
+
+This feature is disabled by default.
 
 ## Show Configuration
 
 Keycloak can read configuration properties from multiple sources (environment variables, CLI, and property files). In addition to 
 that, the server's configuration can also be persisted when running the `config` command.
 
-## Installation layout
+## System properties defined by Keycloak
 
-* keycloak.home - Defaults to installation directory of Keycloak
-* keycloak.config-file - Defaults to `${keycloak.config-dir}/keycloak.properties`
-* keycloak.config-dir - Defaults to `${keycloak.home}/conf`
-* keycloak.data-dir - Defaults to `${keycloak.home}/data`
-* keycloak.log-dir - Defaults to `${keycloak.home}/log`
-* keycloak.provider-dir - Defaults to `${keycloak.home}/providers`
-* keycloak.theme-dir - Defaults to `${keycloak.home}/themes`
+The following system properties are defined by Keycloak, and can be used for property replacement.
+
+* kc.home - Defaults to installation directory of Keycloak
+* kc.config-file - Defaults to `${kc.config-dir}/keycloak.properties`
+* kc.config-dir - Defaults to `${kc.home}/conf`
+* kc.data-dir - Defaults to `${kc.home}/data`
+* kc.log-dir - Defaults to `${kc.home}/log`
+* kc.provider-dir - Defaults to `${kc.home}/providers`
+* kc.theme-dir - Defaults to `${kc.home}/themes`
 
 ## Caches (Infinispan and JGroups)
 
