@@ -5,6 +5,7 @@ In the new console, the client protocols (OIDC/SAML2.0) will been extended to cl
 This website only records the main changes. The whole prototype can be accessed through the following links.
 
 * [Clients list](https://marvelapp.com/7gb4j6h/screen/66566055)
+* [Initial access token](https://marvelapp.com/prototype/be22jj6/screen/74620513)
 * [Create/Import client](https://marvelapp.com/7gb4j6h/screen/66568447)
 * [Settings](https://marvelapp.com/7gb4j6h/screen/66065815)
 * [Credentials](https://marvelapp.com/7gb4j6h/screen/66577335)

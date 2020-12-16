@@ -3,6 +3,7 @@
 * [**Clients**](/clients/overview.md)
 
   * [List](/clients/list.md)
+  * [Initial access token](/clients/InitialAccessToken.md)
   * [Create/Import](/clients/create-import.md)
   * [Settings](/clients/settings.md)
   * [Credentials](/clients/credentials.md)
@@ -22,3 +23,11 @@
   * [Composite role](/RealmRoles/composite-role.md)
 
 * [**Sessions**](/Sessions/sessions.md)
+
+* [**Events**](/Events/Events.md)
+
+* [**Dashboard**](/Dashboard/Dashboard.md)
+
+* [**Realm settings**](/RealmSettings/overview.md)
+  * [User registration](/RealmSettings/UserRegistration.md)
+  * [Event configs](/RealmSettings/EventConfigs.md)
