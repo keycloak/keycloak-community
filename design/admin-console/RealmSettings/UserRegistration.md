@@ -1,4 +1,4 @@
-# User registration
+# User Registration
 
 In the new design, the default roles from "Roles" menu and default groups from "Groups" menu will be merged together in Realm settings called “User registration”. This part will introduce some designs and updates of "User registration".
 
