@@ -1,4 +1,4 @@
-# Client scopes Redesign
+# Client scopes redesign
 
 In the new version of Client Scopes feature, not much function changes on the List and Create page, as well as Settings page. To be consistent with the Client scope page in Clients, we got rid of the Default client scope page in the current console and used Change types dropdown to allow users to assign or change client scope types. For Mappers, we optimized its adding process and editing. The scope tab in Client scope is a function we used a whole new layout to show all the assignments. Users will see a table of all effective roles when they first landed on this page.
 
