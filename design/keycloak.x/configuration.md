@@ -391,9 +391,9 @@ There is no need to keep the `/auth` context path currently used by the Wildfly 
 The proxy mode will allow an easy way to configure if Keycloak is hosted behind a reverse-proxy or not, including how
 SSL is terminated.
 
-* proxy.mode - none|edge|reencrypt|passthrough
+* proxy - none|edge|reencrypt|passthrough
 
-Setting `proxy.mode` will under the covers change the default values for `http.enabled`, `https.enabled` 
+Setting `proxy` will under the covers change the default values for `http.enabled`, `https.enabled` 
 and `quarkus.http.proxy-address-forwarding` depending on the selected mode.
 
 The `none` value disables proxy support and is the default value.
