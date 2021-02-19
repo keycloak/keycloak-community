@@ -620,6 +620,112 @@ keep it up to date with the latest release.
 For SPIs and Providers we will extend the ProviderFactory to add an option method to return information on what
 properties it supports. This will allow including SPI/provider specific configuration in the documentation.
 
+## Troubleshooting
+
+Keycloak should provide the appropriate leve of information and also tools for troubleshooting. It should help users to:
+
+* Identity the problem through clear and meaningful messages
+* Report issues by providing information about the error, server configuration, and environment.
+* Fix issues by providing suggestions on how to fix well-known usage mistakes and issues
+
+### Using the `version` command
+
+The `version` command should print out information about the runtime environment such as:
+
+* Keycloak Version
+* Operational System Info
+* JVM Info
+
+An example of output is:
+
+```
+Keycloak 13.0.0-SNAPSHOT
+JVM: 11.0.1 (Oracle Corporation OpenJDK 64-Bit Server VM 11.0.1+13)
+OS: Linux 5.10.15-200.fc33.x86_64 amd64
+```
+
+### Using the `show-config` command
+
+The `show-config` command should print out information about the server configuration. It should include:
+
+* Current profile
+* Runtime properties
+  * For each property indicate their source (persisted, CLI, system property, environment vars, etc)
+* Features enabled
+* List of installed providers
+  * Default providers
+  * Configuration for each provider
+* Quarkus properties
+
+An example of output is:
+
+```
+Current Profile: none
+Runtime Properties:
+        kc.cluster =  local (PersistedConfigSource)
+        kc.config.args =   (SysPropConfigSource)
+        kc.db =  h2-file (PersistedConfigSource)
+        kc.db.password =  ******* (PersistedConfigSource)
+        kc.db.username =  sa (PersistedConfigSource)
+        kc.features.scripts =  enabled (PersistedConfigSource)
+        kc.http.enabled =  true (PersistedConfigSource)
+        kc.metrics.enabled =  false (PersistedConfigSource)
+        kc.profile =  dev (PersistedConfigSource)
+        kc.show.config =  none (SysPropConfigSource)
+Quarkus Properties:
+        ...
+Features:
+        scripts, token_exchange
+Providers:
+        ... 
+```
+
+It should allow to filter the output to with only the information users are interested to look at. As well as options to print 
+out everything.
+
+The information should be grouped into categories and be filtered accordingly when running the command.
+
+Filtering examples are:
+
+```
+kc.[sh|bat] show-config # for basic information such as the current profile and runtime properties 
+```
+
+```
+kc.[sh|bat] show-config all # for a verbose output, printing all information 
+```
+
+```
+kc.[sh|bat] show-config features # for information about filtering only 
+```
+
+```
+kc.[sh|bat] show-config features providers # for information about features and installed providers 
+```
+
+### Reporting
+
+The `report` command should produce a file (with the consent of the user) containing all
+the necessary information to talk with Keycloak team about issues.
+
+### Logging
+
+Logging is being covered in a separated document at [logging.md](./logging.md).
+
+### Debugging
+
+Developers should be able to start the server in debug mode to debug the server remotely by using the `debug` option as follows:
+
+```
+kc.[sh|bat] --debug
+```
+
+By default, the remote debugger will be listening on `8787`. Developers can set a different port as follows:
+
+```
+kc.[sh|bat] --debug 5005
+```
+
 ## System properties defined by Keycloak
 
 The following system properties are defined by Keycloak, and can be used for property replacement.
