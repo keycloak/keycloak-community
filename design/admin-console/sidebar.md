@@ -40,6 +40,7 @@
   * [General](/RealmSettings/general.md)
   * [Keys](/RealmSettings/keys.md)
   * [Email](/RealmSettings/email.md)
+  * [Localization](/RealmSettings/Localization.md)
   * [Tokens](/RealmSettings/tokens.md)
   * [User registration](/RealmSettings/UserRegistration.md)
   * [Event configs](/RealmSettings/EventConfigs.md)
