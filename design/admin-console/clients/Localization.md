@@ -1,6 +1,6 @@
 # Localization for specific realms
 
-In the new design, “Internationzalition enabled” and the related settings will be moved from Themes tab to Localization tab. Users will be able to manage the message bundles for the specific realms including override the existing message bundles and add new message bundles based on the different locales/languages.
+In the new design, “Internationalization enabled” and the related settings will be moved from Themes tab to Localization tab. Users will be able to manage the message bundles for the specific realms including override the existing message bundles and add new message bundles based on the different locales/languages.
 
 The whole prototype can be accessed here: https://marvelapp.com/prototype/56d9606/screen/76453547
 
