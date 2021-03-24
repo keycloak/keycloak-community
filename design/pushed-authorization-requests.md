@@ -199,7 +199,7 @@ when `true`
 The PAR is automatically enable and PAR request is mandatory prior autorization endpoint and reject any authorization request without a request URI issued from the PAR endpoint, clients must use it
 
 ### expires_in configuration
-
+The default lifetime of request_uri should be 60 seconds
 
 ### Client Metadata require_pushed_authorization_requests
 
