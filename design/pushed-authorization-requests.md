@@ -1,7 +1,7 @@
 # Pushed authorisation requests (PAR)
 
 * **Status**: Draft #1
-* **JIRA**: 
+* **JIRA**: TBD
 
 
 ## Motivation
@@ -188,6 +188,9 @@ when `PAR` is `true`
 
 The Authorisation server support the PAR flow and a client may use the PAR flow
 
+Files/Classes/methods affected:
+* TBD
+
 ### require_pushed_authorization_requests parameter 
 
 when `false`
@@ -198,8 +201,14 @@ when `true`
 
 The PAR is automatically enable and PAR request is mandatory prior autorization endpoint and reject any authorization request without a request URI issued from the PAR endpoint, clients must use it
 
+Files/Classes/methods affected:
+* TBD
+
 ### expires_in configuration
 The default lifetime of request_uri should be 60 seconds
+
+Files/Classes/methods affected:
+* TBD
 
 ### Client Metadata require_pushed_authorization_requests
 
@@ -207,9 +216,8 @@ when `false`, PAR is not mandatory
 
 when `true`, PAR is mandatory
 
-if client metadata require_pushed_authorization_requests `true` and server metadata require_pushed_authorization_requests `false`
-
-NOT SUPPORTED???
+Files/Classes/methods affected:
+* TBD
 
 ### The PAR endpoint 
 
@@ -229,6 +237,9 @@ save the Auth Request+request_uri+expires_in
 
 return PAR Response
 
+Files/Classes/methods affected:
+* TBD
+
 ### Generation of request_uri
 The format of the "request_uri" value is at the discretion of the authorization server but it MUST contain some part generated using a cryptographically strong pseudorandom algorithm such that it is computationally infeasible to predict or guess a valid value. The authorization server MAY construct the "request_uri" value using the form "urn:ietf:params:oauth:request_uri:<reference-value>" with "<reference-value>" as the random part of the URI that references the respective authorization request data. The string representation of a UUID as a URN per [RFC4122] is also an option for authorization servers to construct "request_uri" values. The "request_uri" value MUST be bound to the client that posted the authorization request.
 
@@ -239,5 +250,37 @@ Must check if request_uri still valid
 
 ### Save the authorization request with the associated request_uri generated
 
+### Change in Authorization endpoint
 
+Files/Classes/methods affected:
+* TBD
 
+### Admin UI
+The following configuration options should be exposed in the Admin UI for OIDC clients:
+* PAR Mode: enable / disable
+* request_uri lifetime
+* require_pushed_authorization_requests
+
+Files/Classes/methods affected:
+* TBD
+
+## Tests
+PAR should be properly covered by unit and integration tests.
+
+## Documentation
+PAR usage should be properly documented.
+
+Affected documents: Securing Applications and Services Guide
+
+## Open Questions
+
+1. if client metadata require_pushed_authorization_requests `true` and server metadata require_pushed_authorization_requests `false` ==> NOT SUPPORTED???
+
+## Resources
+* [draft-ietf-oauth-par][1]
+* [draft-ietf-oauth-jwsreq][2]
+* [rfc4122][3]
+
+[1]: https://tools.ietf.org/html/draft-ietf-oauth-par-06
+[2]: https://tools.ietf.org/html/draft-ietf-oauth-jwsreq-30
+[3]: https://tools.ietf.org/html/rfc4122
