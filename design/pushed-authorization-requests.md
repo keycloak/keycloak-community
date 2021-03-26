@@ -1,12 +1,12 @@
 # Pushed authorisation requests (PAR)
 
-* **Status**: Draft #1
+* **Status**: Notes
 * **JIRA**: TBD
 
 
 ## Motivation
 
-[Pushed authorisation requests](https://tools.ietf.org/html/draft-ietf-oauth-par-06) is designed to enable OAuth clients to push the payload of an authorization request directly to the authorization server in exchange for a request URI value, which is used as reference to the authorization request payload data in a subsequent call to the authorization endpoint via the user-agent. The spec is still draft, but it has already been implemented by many major IdPs. By supporting this spec, we will be able to use Keycloak in more fields such as FAPI 2.0.
+[Pushed authorisation requests][1] is designed to enable OAuth clients to push the payload of an authorization request directly to the authorization server in exchange for a request URI value, which is used as reference to the authorization request payload data in a subsequent call to the authorization endpoint via the user-agent. The spec is still draft, but it has already been implemented by many major IdPs. By supporting this spec, we will be able to use Keycloak in more fields such as FAPI 2.0.
 
 Introducing an extra back-end call to submit the authorisation parameters has three main benefits:
 
@@ -188,8 +188,11 @@ when `PAR` is `true`
 
 The Authorisation server support the PAR flow and a client may use the PAR flow
 
-Files/Classes/methods affected:
-* TBD
+Classes/methods affected:
+
+* org.keycloak.protocol.oidc.OIDCConfigAttributes
+* org.keycloak.protocol.oidc.OIDCWellKnownProvider
+    * getConfig()
 
 ### require_pushed_authorization_requests parameter 
 
@@ -201,14 +204,17 @@ when `true`
 
 The PAR is automatically enable and PAR request is mandatory prior autorization endpoint and reject any authorization request without a request URI issued from the PAR endpoint, clients must use it
 
-Files/Classes/methods affected:
-* TBD
+Classes/methods affected:
 
-### expires_in configuration
+* org.keycloak.protocol.oidc.OIDCConfigAttributes
+* org.keycloak.protocol.oidc.OIDCWellKnownProvider
+    * getConfig()
+
+### request_uri_lifespan configuration
 The default lifetime of request_uri should be 60 seconds
 
-Files/Classes/methods affected:
-* TBD
+Classes/methods affected:
+
 
 ### Client Metadata require_pushed_authorization_requests
 
@@ -216,53 +222,102 @@ when `false`, PAR is not mandatory
 
 when `true`, PAR is mandatory
 
-Files/Classes/methods affected:
-* TBD
+Classes/methods affected:
+
+* org.keycloak.models.ClientModel
+* org.keycloak.models.cache.infinispan.ClientAdapter
+* org.keycloak.models.cache.infinispan.entities.CachedClient
+* org.keycloak.models.jpa.ClientAdapter
+* org.keycloak.models.jpa.entities.ClientEntity
+* org.keycloak.models.map.client.AbstractClientEntity
 
 ### The PAR endpoint 
 
-Authenticate the client in the same way as at the token endpoint
+(1) : Authenticate the client in the same way as at the token endpoint
 
-Accept The OAuth 2.0 authorisation request parameters
+(2) : Accept The OAuth 2.0 authorisation request parameters
 
-Check if the configuration allow the client to make a PAR request
+(3) : Check if the configuration allow the client to make a PAR request
 
-Reject the request if the "request_uri" authorization request parameter is provided.
+(4) : Reject the request if the "request_uri" authorization request parameter is provided.
 
-Validate the pushed request as it would an authorization request sent to the authorization endpoint
+(5) : Validate the pushed request as it would an authorization request sent to the authorization endpoint
 
-Generate request_uri
+(6) : Generate request_uri
 
-save the Auth Request+request_uri+expires_in
+(7) : save the Auth Request+request_uri+request_uri_lifespan
 
-return PAR Response
+(8) : return PAR Response
 
-Files/Classes/methods affected:
-* TBD
+Classes/methods added:
+
+```java
+/**
+ * OAuth 2.0 PAR request endpoint
+ */
+public class ParEndpoint extends AuthorizationEndpointBase {
+
+    /**
+     * Handles PAR requests.
+     *
+     * @return the PAR response.
+     */
+    @Path("par")
+    @POST
+    @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response handleParRequest() {
+        
+    }
+    
+}
+```
 
 ### Generation of request_uri
+As per spec,
+
 The format of the "request_uri" value is at the discretion of the authorization server but it MUST contain some part generated using a cryptographically strong pseudorandom algorithm such that it is computationally infeasible to predict or guess a valid value. The authorization server MAY construct the "request_uri" value using the form "urn:ietf:params:oauth:request_uri:<reference-value>" with "<reference-value>" as the random part of the URI that references the respective authorization request data. The string representation of a UUID as a URN per [RFC4122] is also an option for authorization servers to construct "request_uri" values. The "request_uri" value MUST be bound to the client that posted the authorization request.
+
+Classes/methods added:
 
 ### Retrieve the authorization request with the request_uri
 
-At the Authorisation Endpoint, keycloak must be able to retrieve the authorization request with the request_uri
+At the Authorisation Endpoint, keycloak must be able to retrieve the authorization request with the request_uri.
+
 Must check if request_uri still valid
 
-### Save the authorization request with the associated request_uri generated
+Classes/methods added:
+
+### Save the authorization request with the associated request_uri generated + request_uri_lifespan
+
+Classes/methods added:
 
 ### Change in Authorization endpoint
+Authorisation server should also check request_uri combine with:
+
+* PAR enable 
+* Server metadata require_pushed_authorization_requests 
+* Client metadata require_pushed_authorization_requests
+* request_uri_lifespan
+
+Authorisation server should also be able to retrieve authorisation request associated to the request_uri when applicable.
 
 Files/Classes/methods affected:
-* TBD
+
+* AuthorizationEndpointRequestParserProcessor
+    * parseRequest
 
 ### Admin UI
 The following configuration options should be exposed in the Admin UI for OIDC clients:
 * PAR Mode: enable / disable
-* request_uri lifetime
+* request_uri lifespan
 * require_pushed_authorization_requests
 
 Files/Classes/methods affected:
-* TBD
+
+* org.keycloak.services.resources.admin.ClientResource
+* org.keycloak.representations.idm.ClientRepresentation
+* themes/src/main/resources/theme/base/admin/resources/partials/client-detail.html
 
 ## Tests
 PAR should be properly covered by unit and integration tests.
