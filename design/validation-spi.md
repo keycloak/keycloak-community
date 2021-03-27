@@ -38,14 +38,14 @@ Validations should be fast and have little overhead.
 
 - Extensibility
 There should be support for built-in as well as user provided validations.
-The new SPI should be easy to extend. Developers should be able to provide reusable 
-custom validation logic components.
+The new SPI should be easy to extend, most custom validations should only need one implementation class. 
+Developers should be able to provide reusable custom validation logic components.
 
 - Versatility
-Validations should be flexible and offer support for parameterization. 
-There should be a way to check if the parameterization for a validation is valid.
-Validations should be composable. It should be possible to access other validations
-from with a validation. It should be possible to validate simple values according as well as complex objects.
+Validations should be flexible and should support validatation of simple values and complex objects.
+It should be possible to parameterize validation executions. Additionally there should be a way to 
+check if the parameterization for a validation is valid.
+Validations should be composable and it should be possible to access other validations from with a validation. 
 
 ## Considered Options
 
@@ -92,7 +92,11 @@ An earlier attempt at a unified validation SPI can be found here [KEYCLOAK-2045 
 
 ## Proposed Validation SPI
 
-To provide an simple and easy to use API the following types are defined:
+### PoC for new Validator SPI
+
+The Proof of concept implementation can be found here in the PR [KEYCLOAK-2045 Simple Validation API #7887](https://github.com/keycloak/keycloak/pull/7887).
+
+Some usage examples can be found here in the [ValidatorTest](https://github.com/thomasdarimont/keycloak/blob/issue/KEYCLOAK-2045-Simple-Validation-SPI/server-spi-private/src/test/java/org/keycloak/validate/ValidatorTest.java).
 
 ### Core API
 The proposal focus around the following types:
@@ -162,10 +166,53 @@ to support validation of config values that are used to parameterize the validat
 
 Users can provide their own validations via the `provider` SPI by implementing the `CompactValidator` interface as a singleton 
 class or by creating two separate classes by implementing `Validator` and `ValidatorFactory` respectively. 
-In either case, users need to register the new validator via Keycloaks SPI mechanism.
+In either case, users need to register the new validator via Keycloaks SPI mechanism for the `org.keycloak.validation.ValidatorFactory` service.
 
-### PoC for new Validator SPI
+A simple custom validation might look like this:
 
-The Proof of concept implementation can be found here in the PR [KEYCLOAK-2045 Simple Validation API #7887](https://github.com/keycloak/keycloak/pull/7887).
+```java
+@AutoService(ValidatorFactory.class) // annotation processors like googles auto-service can generate the service manifest
+public class CustomNonNullValidator implements CompactValidator {
 
-Some usage examples can be found here in the [ValidatorTest](https://github.com/thomasdarimont/keycloak/blob/issue/KEYCLOAK-2045-Simple-Validation-SPI/server-spi-private/src/test/java/org/keycloak/validate/ValidatorTest.java).
+    public static final CustomNonNullValidator INSTANCE = new CustomNonNullValidator();
+
+    public static final String ID = "notNull";
+
+    public static final String ERROR_NULL = "error-invalid-null";
+
+    private CustomNonNullValidator() {}
+
+    @Override
+    public String getId() {
+        return ID;
+    }
+
+    @Override
+    public ValidationContext validate(Object input, String inputHint, ValidationContext context, Map<String, Object> config) {
+
+        if (input == null) {
+            context.addError(new ValidationError(ID, inputHint, ERROR_NULL, input));
+            return context;
+        }
+
+        return context;
+    }
+}
+```
+
+### Suggest Built-in Validations
+
+1. Length
+1. NotEmpty
+1. Format
+1. Number
+1. Pattern
+1. URL
+1. EMail
+1. DateTime
+
+### Integration plan
+
+1. Prepare Validation SPI in `server-spi-private` and consolidate other Validation SPIs.
+1. Adapt User-Profile support to use the new Validation SPI
+1. Promote Validation SPI to `server-spi` as an official API and expose validator lookup via KeycloakSession
