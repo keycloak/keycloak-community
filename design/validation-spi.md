@@ -89,6 +89,11 @@ Also, bean-validation still works quite well for declarative validation in JAX-R
 
 An earlier attempt at a unified validation SPI can be found here [KEYCLOAK-2045 Add support for flexible Validation](https://github.com/keycloak/keycloak/pull/7324) and was discussed on the [keycloak-dev mailing list](https://groups.google.com/g/keycloak-dev/c/-XjQu7rn56s).
 
+After some discussion, it became apparent that this proposal provides a very comprehensive validation framework that 
+offers numerous functionalities that go beyond the requirements of user profile validation and other validations in Keycloak.
+
+However, the API was very complex and not easy to understand. Therefore, it was agreed that @thomasdarimont would revise 
+the proposal again and present it in a smaller form. This has resulted in the new "Simple Validation SPI" proposal.
 
 ## Proposed Validation SPI
 
@@ -168,7 +173,7 @@ Users can provide their own validations via the `provider` SPI by implementing t
 class or by creating two separate classes by implementing `Validator` and `ValidatorFactory` respectively. 
 In either case, users need to register the new validator via Keycloaks SPI mechanism for the `org.keycloak.validation.ValidatorFactory` service.
 
-A simple custom validation might look like this:
+A simple custom `Validator` might look like this:
 
 ```java
 @AutoService(ValidatorFactory.class) // annotation processors like googles auto-service can generate the service manifest
