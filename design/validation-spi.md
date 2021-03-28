@@ -107,8 +107,9 @@ Some usage examples can be found here in the [ValidatorTest](https://github.com/
 The proposal focus around the following types:
 1. `Validator`: `Provider` interface for validation mechanics.
 1. `ValidationContext`: Holds state of a sequence of validations.
-1. `ValidationResult` Denotes the outcome of a validation.
-1. `ValidationError` Represents an error found during validation.
+1. `ValidationResult`: Denotes the outcome of a validation.
+1. `ValidatorConfig`: Denotes the configuration for a Validator. A typed wrapper around a `Map<String,Object>`.
+1. `ValidationError`: Represents an error found during validation.
 1. `ValidatorLookup`: Helper class to provide lookups for built-in and user provided validations.
 
 ### Support API
@@ -140,26 +141,16 @@ public interface Validator extends Provider {
      * @param config    parameterization for the current validation
      * @return the validation context with the outcome of the validation
      */
-    ValidationContext validate(Object input, String inputHint, ValidationContext context, Map<String, Object> config);
+    ValidationContext validate(Object input, String inputHint, ValidationContext context, ValidatorConfig config);
 
     // convenience methods, which all delegate to the validate(...) method above
     default ValidationContext validate(Object input) {...}
     default ValidationContext validate(Object input, ValidationContext context) {...}
     default ValidationContext validate(Object input, String inputHint, ValidationContext context) { ... }
-
-    /**
-     * Validates the given validation config.
-     *
-     * @param config the config to be validated
-     * @return the validation result
-     */
-    default ValidationResult validateConfig(Map<String, Object> config) {
-        return ValidationResult.OK;
-    }
 }
 ```
 
-### Adding new Validator
+### Adding a new Validator
 
 New built-in `Validator`'s can implement the provided `CompactValidator` interface.
 A `CompactValidator` needs to provide the following two methods:
@@ -193,7 +184,7 @@ public class CustomNonNullValidator implements CompactValidator {
     }
 
     @Override
-    public ValidationContext validate(Object input, String inputHint, ValidationContext context, Map<String, Object> config) {
+    public ValidationContext validate(Object input, String inputHint, ValidationContext context, ValidatorConfig config) {
 
         if (input == null) {
             context.addError(new ValidationError(ID, inputHint, ERROR_NULL, input));
@@ -205,19 +196,38 @@ public class CustomNonNullValidator implements CompactValidator {
 }
 ```
 
+### Validating Validator configuration
+
+Validator configurations might be specified via the admin-console. Therefore it must be possible to validate validator configuration. Validator configurations can be valdiated via the `ValidationResult validateConfig(ValidatorConfig config)`
+method of the `ValidatorFactory`. Custom Validators which implement the `CompactValidator` interface can implement the method
+in the same class. This supports concise and self-contained Validator components.
+
+```java
+public interface ValidatorFactory extends ProviderFactory<Validator> {
+    /**
+     * Validates the given validation config.
+     *
+     * @param config the config to be validated
+     * @return the validation result
+     */
+    default ValidationResult validateConfig(ValidatorConfig config) {
+        return ValidationResult.OK;
+    }
+
+}
+```
+
 ### Suggest Built-in Validations
 
 1. Length
 1. NotEmpty
-1. Format
 1. Number
 1. Pattern
-1. URL
-1. EMail
-1. DateTime
+1. URI
+1. Email
 
 ### Integration plan
 
-1. Prepare Validation SPI in `server-spi-private` and consolidate other Validation SPIs.
+1. Prepare Validation SPI in `server-spi-private` in the `org.keycloak.validation` package and consolidate the other Validation APIs to use the new Validation SPI. Note, that most of the validation code can be directly replaced.
 1. Adapt User-Profile support to use the new Validation SPI
 1. Promote Validation SPI to `server-spi` as an official API and expose validator lookup via KeycloakSession
