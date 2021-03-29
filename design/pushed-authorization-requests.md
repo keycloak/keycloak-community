@@ -215,6 +215,9 @@ The default lifetime of request_uri should be 60 seconds
 
 Classes/methods affected:
 
+* org.keycloak.protocol.oidc.OIDCConfigAttributes
+* org.keycloak.protocol.oidc.OIDCWellKnownProvider
+    * getConfig()
 
 ### Client Metadata require_pushed_authorization_requests
 
@@ -279,18 +282,28 @@ As per spec,
 The format of the "request_uri" value is at the discretion of the authorization server but it MUST contain some part generated using a cryptographically strong pseudorandom algorithm such that it is computationally infeasible to predict or guess a valid value. The authorization server MAY construct the "request_uri" value using the form "urn:ietf:params:oauth:request_uri:<reference-value>" with "<reference-value>" as the random part of the URI that references the respective authorization request data. The string representation of a UUID as a URN per [RFC4122] is also an option for authorization servers to construct "request_uri" values. The "request_uri" value MUST be bound to the client that posted the authorization request.
 
 Classes/methods added:
+ * org.keycloak.common.util.RequestUriUtil
+
+### Save the authorization request with the associated request_uri generated + request_uri_lifespan
+It can be done with org.keycloak.sessions.AuthenticationSessionModel
+
+```
+
+authenticationSession.setClientNote(request_uri, request+request_uri_lifespan);
+
+```
 
 ### Retrieve the authorization request with the request_uri
 
-At the Authorisation Endpoint, keycloak must be able to retrieve the authorization request with the request_uri.
+At the Authorization Endpoint, authorization server must be able to retrieve the authorization request with the request_uri.
+It can be done with org.keycloak.sessions.AuthenticationSessionModel
 
-Must check if request_uri still valid
+```
 
-Classes/methods added:
+authenticationSession.getClientNote(request_uri);
 
-### Save the authorization request with the associated request_uri generated + request_uri_lifespan
+```
 
-Classes/methods added:
 
 ### Change in Authorization endpoint
 Authorisation server should also check request_uri combine with:
@@ -304,7 +317,7 @@ Authorisation server should also be able to retrieve authorisation request assoc
 
 Files/Classes/methods affected:
 
-* AuthorizationEndpointRequestParserProcessor
+* org.keycloak.protocol.oidc.endpoints.request.AuthorizationEndpointRequestParserProcessor
     * parseRequest
 
 ### Admin UI
