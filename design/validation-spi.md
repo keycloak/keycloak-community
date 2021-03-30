@@ -147,6 +147,7 @@ public interface Validator extends Provider {
     default ValidationContext validate(Object input) {...}
     default ValidationContext validate(Object input, ValidationContext context) {...}
     default ValidationContext validate(Object input, String inputHint, ValidationContext context) { ... }
+    // ... more convenience methods
 }
 ```
 
@@ -217,17 +218,73 @@ public interface ValidatorFactory extends ProviderFactory<Validator> {
 }
 ```
 
+### Reporting Validation Errors
+
+Errors detected during validation are reported via the `ValidationContext#addError(ValidationError)` method.
+`ValidationError` provides a constructor which to capture information about:
+- The id of the `Validator` where the `ValidationError` was detected.
+- The `inputHint` which could be the name of a (nested) attribute that is validated.
+- The i18n message (key) for the error message.
+- A var args array with the message parameters that can later be used to render error message.
+
+Note that `ValidationError` provides methods like `ValidationError#getMessageParameters` and `ValidationError#getInputHintWithMessageParameters` that help with message rendering too.
+
+Adding an `ValidationError` to a `ValidationContext` toggles it's `valid` status to `false`.
+
+```java
+public ValidationContext validate(Object input, String inputHint, ValidationContext context, ValidatorConfig config) {
+    // ...
+    String string = (String) input;
+    if (string.trim().length() == 0) {
+        context.addError(new ValidationError(ID, inputHint, MESSAGE_BLANK, input));
+    }
+    return context;
+}
+```
+### Rendering Error Messages
+
+Validation errors should provide a internationalizable message (key) for `ResourceBundle` lookups as well as optional 
+message parameters to provide information about the validated input as well as the valdiated value.
+
+The proposed `ValidationError` class provides a `formatMessage` method which takes a `BiFunction` to abstract
+the actual error message rendering. The first parameter is the `message` key followed by an array of message parameters.
+
+The first message parameter will be the `inputHint` passed into the `Validator#validate(..)` followed by the `messageParameters`.
+
+```java
+public String formatMessage(BiFunction<String, Object[], String> formatter) {
+    Objects.requireNonNull(formatter, "formatter must not be null");
+    return formatter.apply(message, getInputHintWithMessageParameters());
+}
+```
+
+This allows error message rendering like:
+```
+error-invalid-value={0} is invalid: <{1}>  --> address.zip is invalid: <null>
+```
+
+Here is an [example of a custom error message rendering](https://github.com/keycloak/keycloak/pull/7887/files#diff-e8a31e5e873f1c5826f3c2ce581056a85457d21bc60504d06873410ef36f9bcbR119) with the proposed API, look for the `public void formatError()` test.
+
 ### Suggest Built-in Validations
 
-1. Length
-1. NotEmpty
-1. Number
-1. Pattern
-1. URI
-1. Email
+It is suggested to provide a set of built-in validations.
+
+1. Length - Checks if a string certain length
+1. NotEmpty - Checks if a string, collection, map is not empty
+1. Number - Checks if a given value is a number (Integer / Double)
+1. Pattern - Checks if the given value matches a pattern
+1. URI - Checks if the given value is a valid URI
+1. Email - Checks if the given value is a valid email address
 
 ### Integration plan
 
 1. Prepare Validation SPI in `server-spi-private` in the `org.keycloak.validation` package and consolidate the other Validation APIs to use the new Validation SPI. Note, that most of the validation code can be directly replaced.
 1. Adapt User-Profile support to use the new Validation SPI
 1. Promote Validation SPI to `server-spi` as an official API and expose validator lookup via KeycloakSession
+
+### Open Questions
+1. Should users be able to override built-in Valdators?
+1. How should the error message keys look like?
+1. Do we need a concept like a `validation hook` to allow running user provided Validators before/after/instead of built-in validators?
+
+
