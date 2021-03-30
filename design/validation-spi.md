@@ -286,5 +286,8 @@ It is suggested to provide a set of built-in validations.
 1. Should users be able to override built-in Valdators?
 1. How should the error message keys look like?
 1. Do we need a concept like a `validation hook` to allow running user provided Validators before/after/instead of built-in validators?
+1. Should ValidationErrors be Comparable? Do we need concepts like `order` or `priority`?
 
-
+### Further Work
+1. Add support to report `ValidationWarning`s next to `ValidationError`s to report problems, that don't fail the validation. A generic base type could be `ValidationProblem`.
+1. Make Validations executable in the Client side for validation in admin-console.
