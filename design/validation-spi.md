@@ -45,7 +45,7 @@ Developers should be able to provide reusable custom validation logic components
 Validations should be flexible and should support validatation of simple values and complex objects.
 It should be possible to parameterize validation executions. Additionally there should be a way to 
 check if the parameterization for a validation is valid.
-Validations should be composable and it should be possible to access other validations from with a validation. 
+Validations should be composable and it should be possible to access other validations from within a validation. 
 
 ## Considered Options
 
