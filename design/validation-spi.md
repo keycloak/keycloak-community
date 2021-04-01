@@ -55,7 +55,7 @@ The JSR 380 Bean Validation 2.0 is a mature and rich validation framework that i
 
 - Optimized for validation of complex Java bean objects based on declarative configuration rather than single values.
 
-Allthough, value validations are possible via `javax.validation.Validator#validateValue`, they require a bean class 
+Although, value validations are possible via `javax.validation.Validator#validateValue`, they require a bean class 
 with a property with the annotated constraints.
 ```java
 	<T> Set<ConstraintViolation<T>> Validator#validateValue(Class<T> beanType,
@@ -73,8 +73,12 @@ with a property with the annotated constraints.
     <version>6.0.12.Final</version>
 </dependency>
 ```
-- No direct support for validation (Constraint) lookups by name. The user-profile support needs a way to lookup validations by name.
-- No easy way to dynamically configure constraints programatically. The user-profile support needs a way to configure validation dynamically.
+- No direct support for validation (Constraint) lookups by name, however the user-profile support needs a way to lookup validations by name.  
+`ConstraintValidator` lookups could be done with a custom mapping of constraint name to `ConstraintValidator` class.
+- It is possible to dynamically configure constraints programmatically and from external configuration. 
+Hibernate-validator supports programmatic validation, see [Hibernate Validator Programmatic constraint definition and declaration](https://docs.jboss.org/hibernate/validator/5.3/reference/en-US/html/ch11.html#section-programmatic-api).
+There is also support for [XML Configuration in beanvalidation Spec](https://beanvalidation.org/2.0/spec/#xml).
+
 - Definition of [custom validations is quite involved](https://docs.jboss.org/hibernate/stable/validator/reference/en-US/html_single/#validator-customconstraints) - you need 2 classes (annotation + constraint) + error message + META-INF service manifest.
 
 All this was considered and evaluated in a small prototype, but then it was concluded that it makes more sense to go 
@@ -107,17 +111,16 @@ Some usage examples can be found here in the [ValidatorTest](https://github.com/
 The proposal focus around the following types:
 1. `Validator`: `Provider` interface for validation mechanics.
 1. `ValidationContext`: Holds state of a sequence of validations.
-1. `ValidationResult`: Denotes the outcome of a validation.
+1. `ValidationResult`: Denotes the outcome of the validation and contains a collection of all the `ValidationError` found during validation.
 1. `ValidatorConfig`: Denotes the configuration for a Validator. A typed wrapper around a `Map<String,Object>`.
-1. `ValidationError`: Represents an error found during validation.
-1. `ValidatorLookup`: Helper class to provide lookups for built-in and user provided validations.
+1. `ValidationError`: Denotes a concrete error found during validation that was reported by a `Validator`.
+1. `Validators`: API Facade to provide lookups for built-in and user provided validations.
 
 ### Support API
 The following types provide the integration with the Keycloak infrastructure:
 1. `ValidatorFactory`: `ProviderFactory` interface for custom validation contributions.
 1. `ValidatorSPI`: Provides the `validator` SPI.
 1. `CompactValidator`: Convenience class for built-in validations.
-1. `BuiltinValidators`: Denotes a registry for internal built-in validations.
 
 The proposed package name is `org.keycloak.validation`. Note the current PR [KEYCLOAK-2045 Simple Validation API](https://github.com/keycloak/keycloak/pull/7887) uses the package name `org.keycloak.validate` to provide a transition path for the current API.
 
@@ -149,6 +152,86 @@ public interface Validator extends Provider {
     default ValidationContext validate(Object input, String inputHint, ValidationContext context) { ... }
     // ... more convenience methods
 }
+```
+
+### Validator lookups
+
+`Validator` instances can be found by name via the `Validators.validator(keycloakSession, validatorId)` method.
+This is necessary to support dynamic validator lookups based on user-profile configurations, for example:
+```java
+Validators.validator(keycloakSession, LengthValidator.ID);
+```
+
+Built-in `Validator` instances can be accessed directly via static methods on the `Validators` class, for example: 
+```java
+Validators.lengthValidator()
+```
+
+`KeycloakSession` could provide like `KeycloakSession#validators()` that returns a `Validators` instance configured with 
+the current session.
+```java
+keycloakSession.validators().validator(LengthValidator.ID);
+```
+
+### Validating input
+
+Depending on the use case we support different variants of validating input.
+
+The `Validator#validate(..)` method returns a `ValidationContext` that can be used for consecutive validations.
+The result of a validation is denoted by a `ValidationResult` which contains the validation outcome (valid true/false) 
+including a collection of `ValidationError`'s found during validation.
+
+For brevity, the result of a single validation can be read via `ValidationContext#isValid()`. 
+The result of consecutive validations can be obtained by calling `ValidationContext#toResult` which yields an `ValidationResult`. 
+
+For simple validations we allow single one-short validation executions.
+Those validations can use the static methods on `Validators` to access a specific `Validator` instance. 
+```java
+Assert.assertTrue(Validators.notEmptyValidator().validate("a").isValid());
+```
+
+More elaborate validations that need to be performed consecutively can use the `ValidationContext` to accumulate 
+validation errors. `Validator` executions can also be customized via an optional `ValidatorConfig`.
+```java
+String input = "user@acme.com";
+String inputHint = "email";
+
+ValidationContext context = new ValidationContext(session);
+Validators.emailValidator().validate(input, inputHint, context);
+Validators.patternValidator().validate(input, inputHint, context, ValidatorConfig.configFromMap(Collections.singletonMap("pattern", ".*@acme.com")));
+
+ValidationResult result context.toResult();
+Assert.assertTrue(result.isValid());
+```
+
+Validations that need access context information can use the `KeycloakSession` from the `ValidationContext` to access
+the `KeycloakContext` which may expose information like the current `RealmModel` and `ClientModel`.
+
+`Valdiator` implementations can also use the `ValidationContext` to access the `RealmModel` as shown before, to
+honor realm settings during validation, e.g. for email uniqueness.
+
+```java
+String input = "tester";
+String inputHint = "username";
+
+ValidationContext context = new ValidationContext(session);
+
+session.validators().length().validate(input, inputHint, context, ValidatorConfig.configFromMap(Collections.singletonMap("min", "2")));
+session.validators().user().usernameUnqiue(input, context);
+session.validators().validator("swearwords").validate(input, inputHint, context);
+
+ValidationResult result = context.toResult();
+
+Assert.assertFalse(result.isValid());
+Assert.assertEquals(1, result.getErrors().size());
+
+ValidationError[] errors = result.getErrors().toArray(new ValidationError[0]);
+ValidationError error = errors[0];
+Assert.assertNotNull(error);
+Assert.assertEquals(LengthValidator.ID, error.getValidatorId());
+Assert.assertEquals(inputHint, error.getInputHint());
+Assert.assertEquals(LengthValidator.MESSAGE_INVALID_LENGTH, error.getMessage());
+Assert.assertEquals(input, error.getMessageParameters()[0]);
 ```
 
 ### Adding a new Validator
