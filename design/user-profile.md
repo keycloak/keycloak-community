@@ -15,18 +15,23 @@ With a defined user profile it would be possible to:
 * Select user attributes in mappers instead of supplying the key
 * Request missing information from users on demand
 
+It would be possible to define more user profiles per realm, with client and scopes based rules to select appropriate user profile and required attributes for request. 
+This mechanism allows flexibility like defining separate user profile for Admin console, which allows an admin to create an initial user with only specifying email, 
+then requiring user to fill in first and last names on first login (where other user profile with more required attributes will be used).
+
 
 ## User Profile SPI
 
 To allow user profiles to be customized an SPI will be introduced. 
 
-The User Profile provider will be responsible for providing metadata around user profiles as well as validation of user profiles. The API will not be covered in this design, but rather only the requirements for the API.
+The User Profile provider will be responsible for providing metadata around user profiles as well as validation of user profiles and update of the user mode. The API will not be covered in this design, but rather only the requirements for the API.
 
 The User Profile provider needs to be supplied with the following context when validating:
 
 * Is it a new user or update to existing user?
 * What is the source of the information (user, admin, user federation, identity brokering)
 * What scopes if any are being requested?
+* Which client requested the action?
 
 If validation is not passed the following information needs to be available from the provider:
 
@@ -40,6 +45,7 @@ The user profile metadata provided by the provider should be able to answer the 
 
 * Is a specific attribute required?
 * Is a specific attribute supported?
+* Validations of the attribute value
 * List of supported attributes
 
 
@@ -49,96 +55,314 @@ For backwards compatibility a legacy provider will be implemented that hardcodes
 
 The legacy provider will:
 
-* Support firstname, lastname and email - validation only for email
-* Ignore unknown attributes - current behavior is that additional attributes needs to be validated elsewhere (i.e. through custom actions)
+* Support username, firstname, lastname and email as mandatory (reflecting realm configurations like 'Email as username'), format validation only for email. Business validations on username and email uniqueness as now.
+* Ignore unknown attributes in validations but copy them into user model - current behavior is that additional attributes needs to be validated elsewhere (i.e. through custom actions)
+* Protect read-only attributes not to be updated/deleted on update
 
 
 ## Default Provider
 
-The default provider will support defining a user attribute as a JSON document. Initially the admin console will simply allow editing the JSON directly, but the plan is to introduce an editor.
+The default provider will support defining an user profile configurations as a JSON document. Initially the admin console will simply allow editing the JSON directly, but the plan is to introduce an editor.
 
-For new realms the this will be used as the default provider. There will be a hardcoded user profile (see separate section on user profile attributes). A realm will use the hardcoded user profile unless one is configured specifically for the realm.
+For new realms this provider will be used as the default provider. There will be a hardcoded user profiles config JSON (see format description later). A realm will use the hardcoded user profile configuration unless it is changed for the realm.
 
-The user profile will be saved as JSON in a realm attribute. When editing the user profile for a realm the default hardcoded user profile will be shown, but it will only be saved in the realm attribute if the profile is indeed modified and not equal to the built-in profile. 
+The user profiles configuration will be saved as JSON in a realm attribute. When editing the user profiles config for a realm the default hardcoded config will be shown, but it will only be saved in the realm attribute if the configuration is indeed modified and not equal to the built-in one. 
 
-The JSON document will consist of a list of user attributes, where each attribute will contain fields for:
+### Functionality design
 
-* Key - the attribute key
-* Validation - a list of validators, including config
-* Required - ability to specify when the attribute is required, more below
-* Can the user view the attribute? Can the admin view the attribute?
-* Can the user edit the attribute? Can the admin edit the attribute?
+#### What is User Profile
+User Profile configuration defines a set of attributes in user profile and rules for them (mainly validations, visibility in the registration/update form, copying of the values into UserModel during update) to be applied when a given profile configuration is selected/requested for the processing.
+* example of user profile configurations in one realm: basic user (basic info like email and name, basic T&C), paying customer (have to enter info necessary for billing, maybe additional T&C for purchased service etc), employee (have to enter additional info like employee number).
+* user profile configurations are defined in realm (each realm has its own definition of profile configurations), there may be more profile configurations defined in realm. Default Keycloak distribution will define only one profile configuration used for the whole realm.
+* as part of the configuration, attribute types are defined which allow configuring common validations to be shared in distinct user profiles configs (mainly attribute format validations tend to be the same in all user profile configs). These types are then used when attributes belonging to the user profile config are defined, and only few additional properties can be set to define attribute behavior in the profile config, mainly rules when the attribute is required. For more detail see JSON configuration design later. 
+* It is allowed to configure additional/format validations for the special attributes `username` and `email`, but important business validations (uniqueness, requirement) are added automatically by the UserProfileProvider based on the realm configuration and context. It makes configuration simpler, easier, and less error prone.
 
-If it is decided to support dynamic forms (see Dynamic Forms section below) the following fields would also be required:
+#### How is User Profile Configuration selected
+There must be mechanism how is user profile configuration selected/requested for distinct use cases/action, so correct validations are executed. This mechanism depend a lot on the concrete use case, so we should define them explicitly here and not bring them to the config.
+* authentication flow 
+    * default profile config for realm exists (it is named in the JSON profile config file itself)
+    * default profile config can be named for client to override realm’s default. “Client Scopes” will be used for this assignment. Client scopes are different for OIDC and SAML clients, so two scopes have to be created if some profile config has to be used for both protocols, dot separated suffix like “.saml” can be added to the scope name for second one, eg. “profile.simple” and “profile.simple.saml”. “Client scopes” has to be created manually for user profile configs defined in the JSON config file. “Optional Client Scopes” can be used to name other user profile configs which may be requested by client over auth request param (see later).
+    * then client can override it in auth request with protocol specific mechanism:
+        * OIDC uses common scope parameter in OIDC auth request
+            * `scope` to select user profile config is prefixed with `profile.` prefix, then name of the profile config as configured in JSON config. Eg. scope `profile.simple` selects user profile config named “simple” in the JSON config.
+            * client should never ask for more user profile configs this way, if yes then only one is selected and used, but it is not guaranteed which one (“GUI order” from client scopes will be reflected in this selection, profile with lower number first)
+            * OIDC clients can still use `scope` to ask for individual attributes as defined in the specification. Profiles JSON config allows you to configure that attribute is treated as required in this case and the user is forced to enter it. This mechanism is expected to be used in case when only one user profile configuration is used per realm to allow fine grained control by clients.
+        * SAML - SAML auth request override is not required for now, may be implemented later by custom request param or by implementing ["SAML Protocol Extension for Requesting Attributes per Request"](https://www.oasis-open.org/committees/download.php/55790/Connectis%20_protocol_extension_draft.pdf) extension spec
+        * only profile configs allowed for the client over “Optional Client Scopes” can be selected this way (see client configuration in previous point). If requested profile config doesn’t exist or is not allowed then client default is used (or realm default if client doesn’t have its default)
+* Admin REST API user view/creation/update - may depend on who is calling the REST API (admin user, external app):
+    * we are going to implement a mechanism which uses user profile configs for user create/update operations only (to validate data and populate/update UserModel), and selection of the used profile config is based on the client calling REST API (see next point). More detailed mechanism selecting profile configs based on the calling user’s roles/permissions and applied also to get/view operations (so distinct callers can see only some user attributes) is expected in the future.
+    * User profile config is selected this way:
+        * if the calling user is “Service Account” for some client from the realm, then user profile config is selected in the same way as if that client initiates auth flow - client default profile config is used if defined, or realm's default is used.
+        * if the calling user is NOT “Service Account”, then the default profile config assigned to “security-admin-console” client is used (or realm's default if no one is assigned to this client).
+* Admin Console 
+    * Admin Console uses Admin REST API, so the mechanism defined for it and described in the previous point is used. It means that the user profile config assigned to the “security-admin-console” client is used or realm’s default if not configured.
+* User Account console - one profile config is used for this app. Keycloak deployer has to decide which one will be used to show all important info and allow editing it. The app takes the default user profile config named for its client or realm’s default if not named for the client. 
+    * New Account console is OnePage app and uses own REST API implemented in org.keycloak.services.resources.account.AccountRestService
+* we need a new REST API endpoint which returns user profile config metadata so client apps can render forms, run client side validations etc (for use in Admin Console and new Account console and 3rd party apps). It should be a new API out of the Admin REST API as New User Account console doesn’t use Admin REST API.
 
-* Label to use when displayed in forms
-* UI order
-* Input type
+#### How is User Profile Config used in the UserProfileProvider
+* validate new user registration data from UI form/REST request before user is created
+* control process of the UserModel population with attributes for new user creation (fill only attributes enabled for current profile config, ignore others)
+* validate data from user update UI form/REST request before UserModel is updated
+* control process of the UserModel update for existing user based on the new data (update only attributes enabled for current profile config, resolves problem which attributes have to be removed because they are editable for given profile config and no value is provided in new data - currently there is hardcoded list in Keycloak to control this behavior)
+* validate if existing user matches some user profile config (to decide if user update action is necessary during auth flow, or to fill claims in OIDC response etc) - validators for this case can be a bit different than for data coming from form/REST request!
 
-Ability to specify when an attribute is required should be quite flexible to cover use-cases like:
+#### Other implementation notes
+* We have to make really clear how username is available in validated data structure (cases like “email as username”) when validators are called for FRONTEND actions, so correct validators can be implemented
+* For update case called in all contexts (UI form, REST API, Account app) existing UserModel (without applied changes) have to be available in validators so they can perform advanced business checks by comparing changes, having id of the user to check DB or external service etc.
+* Actual user profile config, its annotations and configurations of all attributes in it are passed to the Freemarker context so crafted forms can use it (eg to implement dynamic forms, client side validations etc) now. Later it can be used to implement fully dynamic forms.
+* Event log is extended and the name of the user profile config used for the action is stored there. Important for support.
 
-* Don't ask user for the users birthdate until a client requests the scope "birthdate"
-* Allow an admin to create an initial user with only specifying email, then requiring user to fill in first and last names on first login
-* Ask user for missing information after login with a social provider
+### User Profile Config JSON configuration format
 
-A very rough idea on how the user profile JSON could look like:
+Design principles:
+* validations can be defined only in attribute types to make things simpler
+* only attribute types can inherit from other types to make things simpler, but still allow having common validations defined only once
+* user profile configs then contain a list of attributes belonging to given profile config with assigned types, and allow only to control “required” validation for given attribute. If the attribute is not required then it is editable in the given profile config still (so validations are applied to it and is processed during UserModel update). Required validation configuration is simple (but provides field bindings to OAuth scopes still), it is expected that more profile configs will be defined if different required validations have to be used for distinct client apps.
+* JSON free format `annotation` section is available in config of type, profile config and attribute to allow easier extensibility/customizations in UI/themes etc.
 
-    {
-        "attributes": [{
-            "name": "department",
-            "permissions": {
-                    "view": ["admin", "user"], 
-                    "edit": ["admin"],
-            }
-            "requirement": {
-                "always",
-            }
-            "validation": {
-                "name", 
-                "context" : ["UserProfileUpdate"],
-                { "length" : { "min" : 10, "max": 20 } },
-            },
-            "converter": {
-                "datetime-converter": {
-                    "datetime-format" : "tt/mm/yyyy"
+Field descriptions:
+* `defaultProfileConfig` - name of the default user profile configuration (defined in `profileConfigs` section) for the realm 
+* `types` - defines types of user profile attributes to be used/reused later in the `profileConfigs` section. Type name is key in this object (prevents duplicate types to be defined), can contain letters and numbers only. Type object can contain these configurations:
+    * `parent` - allows to define parent type this one inherits from (see rules for other configs in case of inheritance, in general they are additive/updateable only)
+    * `validations` - array of objects representing validations applied to the attribute of this type. In general these are mainly format/business validations etc. “required” validation is handled by setting in a profile config (see later). username and email fields can have some validations dependent on the realm setting (“email as username”, “email unique” etc) and they are not configured here to keep config simple (they will be added automatically by UserProfileProvider java code when necessary, needs to be documented in the doc!). Validation object contains:
+    * `validator` - name/id of the Validator defined/implemented in Validation SPI (mandatory). If type inherits from parent type this is a key - validators from the parent type with the same name/id are not copied to the current type but new one is used instead. It is not possible to remove validation in sub-type.
+    * `configuration` - configuration of the Validator for this validation (optional). Key value pairs, values can be text, number, boolean, array of values etc (will depend on Validator SPI). Each Validator defines its own possible configuration options.
+    * `annotations` - optional JSON object containing unstructured key value pairs which are populated to the frontend frameworks (freemarker context, JavaScript, returned over user profile metadata REST API) and can be used as controls for UI/theme rendering etc. If type inherits from parent then keys in this object are primary id’s, they override respective config from higher level, it is not possible to remove key in sub-type.
+* `profileConfigs` - definitions of user profile configurations which are then selected to control user validations and UserModel update. Profile config name is key in this object (prevents duplicate profile config names to be used), can contain letters and numbers only. Object bound to profile config name contains these configurations:
+    * `attributes` - defines attributes present in the profile config. attribute name is key in this object (prevents duplicate attributes to be defined), can contain letters and numbers only. Attribute object can contain these configurations:
+        * `type` - type of attribute from `types` section. This config is optional, type of the same name as the attribute name is used if not defined (existence of type have to be validated when JSON config is parsed). Configuration is validated to make sure that same named attribute from different profile configurations use the same type or subtypes only to prevent configuration error.
+        * `required` - optional boolean default `false`. If `true` then “notBlank” validator is applied to this field - applied automatically by UserProfileProvider java code, default impl has to be extensible so custom subclasses can use another validator per field if necessary. `username` and `email` fields required validation may depend on the realm setting (“email as username”, “email unique” etc) and it is handled automatically by UserProfileProvider java code in this case, it overrides what is set here, needs to be well documented in the doc!
+        * `requiredForAuthScopes` - array of strings, same as previous but field is required only if at least one of named OAuth scopes is requested for the current authentication flow - allows to use Keycloak with one user profile config only but working well with OAuth/OIDC scopes
+        * `annotations` - optional JSON object containing unstructured key value pairs which are populated to the frontend frameworks (freemarker context, JavaScript, returned over user profile metadata REST API) and can be used as controls for UI/theme rendering etc. for the field/attribute. They are inherited from type, you can override or add new keys here (it is not possible to remove keys here)
+    * `annotations` - optional JSON object containing unstructured key value pairs which are populated to the frontend frameworks (freemarker context, JavaScript, returned over user profile metadata REST API) and can be used as controls for UI/theme rendering etc. based on selected profile.
+
+#### Example of the default configuration delivered with keycloak
+
+Created to provide same functionality as current impl - improved a bit with some length validations to prevent DB constraint violations.
+
+BTW, `password` field is not considered as part of the profile. In the current implementation of the Register flow and it is handled by a separate Authenticator, even its validation (password format policy, and equality of the “confirm password” field also). But it means that password validation is not performed together with other field validations, so password error messages can be shown after the next form submit after all other fields are patched - not the best UX. 
+
+````
+{
+    "defaultProfileConfig": "default",
+    "types": {
+        "username": {
+            "validations": [
+                {
+                    "validator": "length",
+                    "configuration": {
+                        "min": 3,
+                        "max": 255
+                    }
+                }
+            ]
+        },
+        "email": {
+            "validations": [
+                {
+                    "validator": "length",
+                    "configuration": {
+                        "max": 255
+                    }
                 },
-                "timezone-converter": {
-                    "z": "UTC-0"
-                };
-            },
-            "annotations":  {
-                "key": "value",  
-                "framecolor": "red",
-                "gui-order": "1",
-                "type": "dropdown",
-                "defaults" : [1,2,3,5]
+                {
+                    "validator": "emailFormat"
+                }
+            ]
+        },
+        "firstName": {
+            "validations": [
+                {
+                    "validator": "length",
+                    "configuration": {
+                        "max": 255
+                    }
+                }
+            ]
+        },
+        "lastName": {
+            "validations": [
+                {
+                    "validator": "length",
+                    "configuration": {
+                        "max": 255
+                    }
+                }
+            ]
+        }
+    },
+    "profileConfigs": {
+        "default": {
+            "attributes": {
+                "username": {
+                },
+                "email": {
+                    "required": true
+                },
+                "firstName": {
+                    "required": true
+                },
+                "lastName": {
+                    "required": true
+                }
             }
-        }]
+        }
     }
+}
+````
 
-### Required Fields
+#### Example of the more complex config file with more profile configs and annotations etc.
 
-Requirement should support following values:
+````
+{
+    "defaultProfileConfig": "simple",
+    "types": {
+        "username": {
+            "validations": [
+                {
+                    "validator": "length",
+                    "configuration": {
+                        "min": 3,
+                        "max": 80
+                    }
+                }
+            ]
+        },
+        "email": {
+            "validations": [
+                {
+                    "validator": "length",
+                    "configuration": {
+                        "max": 255
+                    }
+                },
+                {
+                    "validator": "emailFormat"
+                },
+                {
+                    "validator": "emailDomainDenyList"
+                }
+            ],
+            "annotations": {
+                "formHintKey" : "userEmailFormFieldHint"    
+            }
+        },
+        "emailForEmplyee": {
+            "parent": "email",
+            "validations": [
+                {
+                    "validator": "emailFromDomain",
+                    "configuration": {
+                        "domain": "acme.org"
+                    }
+                }
+            ],
+            "annotations": {
+                "formHintKey" : "employeeEmailFormFieldHint"    
+            }
+        },
+        "firstName": {
+            "validations": [
+                {
+                    "validator": "length",
+                    "configuration": {
+                        "max": 255
+                    }
+                }
+            ]
+        },
+        "lastName": {
+            "validations": [
+                {
+                    "validator": "length",
+                    "configuration": {
+                        "max": 255
+                    }
+                }
+            ]
+        },
+        "phone": {
+            "validations": [
+                {
+                    "validator": "phoneNumberFormatInternational"
+                }
+            ]
+        }
+    },
+    "profileConfigs": {
+        "simple": {
+            "attributes": {
+                "username": {
+                },
+                "email": {
+                    "required": true
+                },
+                "firstName": {
+                    "annotations": {
+                        "formAppearance":"whenValueExists"
+                    }
+                },
+                "lastName": {
+                    "annotations": {
+                        "formAppearance":"whenValueExists"
+                    }
+                }
+            },
+            "annotations": {
+                "profileFormHintKey" : "simpleProfileFormFieldHint"    
+            }
+        },
+        "basic": {
+            "attributes": {
+                "username": {
+                },
+                "email": {
+                    "required": true
+                },
+                "firstName": {
+                    "required": true
+                },
+                "lastName": {
+                    "required": true
+                },
+                "phone": {
+                    "requiredForAuthScopes": ["phone", "phone2"]
+                     }
+            }
+        },
+        "employee": {
+            "attributes": {
+                "username": {
+                },
+                "email": {
+                    "type": "emailForEmplyee",
+                    "required": true,
+                    "annotations": {
+                        "formHintKey" : "employeeEmailFormFieldHint"    
+                    }
+                },
+                "firstName": {
+                    "required": true
+                },
+                "lastName": {
+                    "required": true
+                },
+                "phone": {
+                    "required": true
+                }
+            },
+            "annotations": {
+                "profileFormHintKey" : "emplyeeProfileFormFieldHint"    
+            }
+        }
+    }
+}
+````
 
-* `optional` (default if no value given)
-* `always`
-* `user`
-* `{ "scope" : "scope-1" }`
-* `{ "scope" : [ "scope-1", "scope-2" ] }`
+### Validations
 
-The `user` requirement allows an admin to create a user without specifying the value, while the user will then be required to enter the value on first login.
-
-The `scope` requirement allows an attribute to only be required when a specific client scope is being requested.
-
-### Validation
-
-Validation should support the following values:
-
-* `validator-id`
-* `{ "validator-id" : "<config>" }`
-* `{ "validator-id" : { ... } }`
-
-This will allow using built-in validators as well as adding custom validators. A validator can take an option config either as a single field, or a JSON object.
+This will allow using built-in validators as well as adding custom validators over Validation SPI. A validator can take an option config JSON object.
 
 Built-in validators should cover:
 
@@ -150,27 +374,9 @@ Built-in validators should cover:
 * URL
 * Date
 
-There will be a user attribute SPI allowing custom validators to be created.
-
-Validators can also be attached to a special context meaning the validation will only be performed in that specific context.
-This allows distinguishing admin and user validation. For example, an admin may create a user without first and last name, but the user must provider these upon login.
-
-Possible contexts include:
-
-* UpdateProfile
-* UserRegistration
-* UserResource
-* Account
-* Registration
-
-### Converter (optional)
-
-Converters can be used to preprocess an attribute value before storing it.
-A converter may also affect the "read" process.
-
 ### Annotations
 
-Annotations are e.g. unstructured labels which are populated to the freemarker context and can be considered for theme rendering.
+Annotations are e.g. unstructured labels which are populated to the UI/freemarker context and can be considered for theme rendering.
 
 ## Built-in Attributes
 
@@ -191,7 +397,6 @@ With regards to forms there is two options we can choose from:
 The crafted forms may be the ideal solution as that would allow us to more carefully craft form with good usability. A dynamic form may only have limited use as most likely when custom
 attributes are required it would be best to create a custom form to be able to have greater control of the layout.
 
-
 ## Wiring
 
 This section will discuss how the user profile will be used within Keycloak. 
@@ -210,7 +415,7 @@ If validation doesn't pass a generic error message will be displayed at the top,
 
 The update profile action will be expanded to cover attributes in a similar fasion to the registration form. Further, it will support only asking for the fields that are not currently passing validation. 
 
-This will enable use-cases such as not asking users for their birthdate until a client requests the scope birthdate. It will also enable adding additional required attributes, which users will be required to add on the next login.
+This will enable use-cases such as not asking users for their birthdate until a client requests the user profile which requires birthdate. It will also enable adding additional required attributes, which users will be required to add on the next login.
 
 ### Account Console
 
@@ -245,6 +450,10 @@ We could also have a verification on whether or not all mandatory attributes hav
 ### Protocol Mappers
 
 All mappers that use user attributes should provide a drop-down with list of attributes and no longer have a input field to specify the attribute.
+
+There should be also mapper which allows to configure user profiles client app is interested in, and indicate to the client which of them current user already matches. 
+Client app can use them to allow actions which require matched user profile levels, but forward user to Keycloak to ask user for additional attributes if action requires 
+user profile which is not matched yet.
 
 
 ## Milestones
