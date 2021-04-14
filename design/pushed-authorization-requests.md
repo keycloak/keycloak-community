@@ -31,6 +31,10 @@ The presence of "pushed_authorization_request_endpoint" is sufficient for a clie
 
 Boolean parameter indicating whether the authorization server accepts authorization request data only via the pushed authorization request method. If omitted, the default value is "false"
 
+- **request_uri_lifespan**
+
+A JSON number that represents the lifetime of the request URI in seconds as a positive integer, the default value 60.
+
 
 ### Client Metadata
 
@@ -88,10 +92,6 @@ If the request did not use the "POST" method, the authorisation server responds 
 -   413 (Payload Too Large)
 
 If the request size was beyond the upper bound that the authorization server allows, the authorization server responds with an HTTP 413 (Payload Too Large) status code
-
--   429 (Too Many Requests)
-
-If the number of requests from a client during a particular time period exceeds the number the authorization server allows, the authorization server responds with an HTTP 429 (Too Many Requests) status code.
 
 ##### Example PAR request
 
@@ -173,7 +173,7 @@ GET /authorize?client_id=s6BhdRkqt3&request_uri=urn%3Aietf%3Aparams
 
 ## Implementation details
 
-### require_pushed_authorization_requests parameter 
+### Server Metadata require_pushed_authorization_requests parameter 
 
 when `false`
 
@@ -189,7 +189,7 @@ Classes/methods affected:
 * org.keycloak.protocol.oidc.OIDCWellKnownProvider
     * getConfig()
 
-### request_uri_lifespan configuration
+### Server Metadata request_uri_lifespan configuration
 The default lifetime of request_uri should be 60 seconds
 
 Classes/methods affected:
@@ -215,7 +215,7 @@ Classes/methods affected:
 
 ### The PAR endpoint 
 
-(1) : Authenticate the client in the same way as at the authorization endpoint
+(1) : Authenticate the client in the same way as at the token endpoint
 
 (2) : Accept The OAuth 2.0 authorization request parameters
 
@@ -262,34 +262,46 @@ Classes to be added:
  * org.keycloak.common.util.RequestUriUtil
 
 ### Save the authorization request with the associated request_uri generated + request_uri_lifespan
-It can be done with org.keycloak.sessions.AuthenticationSessionModel
+It can be done with help of org.keycloak.models.CodeToTokenStoreProvider
 
 ```
-
-authenticationSession.setClientNote(request_uri, request+request_uri_lifespan);
+CodeToTokenStoreProvider codeStore = session.getProvider(CodeToTokenStoreProvider.class,"infinispan");
+codeStore.put(request_uri, request_uri_lifespan, request);
 
 ```
 
 ### Retrieve the authorization request with the request_uri
 
 At the Authorization Endpoint, authorization server must be able to retrieve the authorization request with the request_uri.
-It can be done with org.keycloak.sessions.AuthenticationSessionModel
+It can be done with help of org.keycloak.models.CodeToTokenStoreProvider
+
+```
+CodeToTokenStoreProvider codeStore = session.getProvider(CodeToTokenStoreProvider.class,"infinispan");
+Map<String, String> request = codeStore.remove(request_uri);
 
 ```
 
-authenticationSession.getClientNote(request_uri);
+### Determine the type of request_uri
+Authorisation server should be able to determine the type of request_uri:
 
-```
+* Request Object (Ex:`https://tfp.example.org/request/jwt/GkurKxf5T0Y-mnPFCHqWOMiZi4VS138cQO_V7PZHAdM`)
 
+* PAR (Ex: `urn:example:bwc4JK-ESC0w8acc191e-Y1LTC2`)
+
+methods added:
+
+* org.keycloak.protocol.oidc.endpoints.request.AuthorizationEndpointRequestParserProcessor
+    * getRequestUriType
 
 ### Change in Authorization endpoint
-Authorisation server should also check request_uri combine with:
+When Server metadata require_pushed_authorization_requests is `true` 
+and request_uri is not type `PAR` then authorization server must reject the request.
 
-* Server metadata require_pushed_authorization_requests 
-* Client metadata require_pushed_authorization_requests
-* request_uri_lifespan
+When Client metadata require_pushed_authorization_requests is `true` and request_uri is not type `PAR` then authorisation server must reject the request.
 
-Authorisation server should also be able to retrieve authorisation request associated to the request_uri when applicable.
+When request_uri is type PAR, Authorisation server should be able to retrieve authorisation request associated to the request_uri
+
+When request_uri is type PAR and associated request_uri_lifespan is expired, then authorization server must reject the request.
 
 Files/Classes/methods affected:
 
@@ -299,7 +311,7 @@ Files/Classes/methods affected:
 ### Admin UI
 The following configuration options should be exposed in the Admin UI for OIDC clients:
 
-* request_uri lifespan
+* request_uri_lifespan
 * require_pushed_authorization_requests
 
 Files/Classes/methods affected:
@@ -310,6 +322,18 @@ Files/Classes/methods affected:
 
 ## Tests
 PAR should be properly covered by unit and integration tests.
+```
+@Test
+public void testParRequest() throws Exception {}
+
+@Test
+public void testParRequestInvalidParameter() throws Exception {}
+
+@Test
+public void testAuthorizationRequest() throws Exception {}
+
+```
+
 
 ## Documentation
 PAR usage should be properly documented.
