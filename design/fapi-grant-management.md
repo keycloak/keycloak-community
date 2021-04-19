@@ -255,10 +255,7 @@ Grant Management usage should be properly documented.
 Affected documents: Securing Applications and Services Guide
 
 ## Resources
-* [draft-ietf-oauth-rar][1]
-* [draft-ietf-oauth-jwsreq][2]
-* [rfc4122][3]
+* [Financial_API_Grant_Management][1]
 
 [1]: https://bitbucket.org/openid/fapi/src/master/Financial_API_Grant_Management.md
-[2]: https://tools.ietf.org/html/draft-ietf-oauth-jwsreq-30
-[3]: https://tools.ietf.org/html/rfc4122
+
