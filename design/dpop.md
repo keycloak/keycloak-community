@@ -13,7 +13,7 @@ DPoP is a cross-cutting concept that would affect multiple Keycloak components, 
 
 It is suggested that DPoP should be set up on a per-client basis, with the three options available that should be interpreted as follows:
 
-|**Value** | **Keycloak Server** | **Keycloak Adaptors** |
+|**Value** | **Keycloak Server** | **Keycloak Adapters** |
 | --- | --- | --- |
 | Required | OAuth endpoints (where applicable) should require a DPoP header and a DPoP-bound token; should return an error otherwise. | Protected resources should require a DPoP header and a DPoP-bound token, or should return an error otherwise. |
 | Optional | _Token Endpoint_: if DPoP header is present, the returned token should be DPoP-bound and should contain a `cnf` claim with a JWK thumbprint; should be a regular token otherwise  <br/><br/>_UserInfo endpoint_: if the access token is DPoP-bound, a matching DPoP header should be required; no header should be required otherwise. | Protected resources should require a matching DPoP header if the supplied access token is DPoP-bound; should ignore the header otherwise. |
@@ -46,13 +46,7 @@ As per the spec,
 
 _([5.5. DPoP Access Token Request][6])_
 
-> :question: As DPoP is primarily meant to protect tokens issued to SPAs, should we also support DPoP for:
->	
-> * password grant 
-> * client credentials grant (DPoP-enabled service accounts?)
-> * token exchange
-> * extension grants (with the future Grant Type SPI)
-> * UMA permissions grant?
+First and foremost, the `authorization_code` and `refresh_token` grant types must be supported; support for other grant types (ROPC, client credentials, token exchange, extension grants) could be added later.
 
 Classes/methods affected:
 
@@ -192,11 +186,13 @@ Authors of [axios-keycloak][12], [keycloak-angular][13] and similar HTTP interce
 Files affected:
 
 *   adapters/oidc/js/src/main/resources/keycloak.d.ts
-    
+
+##### Keypair lifetime and refresh tokens
+As per the spec, refresh tokens are also considered DPoP-bound. This implies that the entire chain of refresh tokens issued by Keycloak during the session would be bound to the same DPoP keypair. Hence, the keypair should be persisted in the user agent for the duration of the session; the same would be relevant for offline tokens. It should be emphasized that the longer the lifetime of the keypair, the higher the probability of it being leaked. For long-lived keypairs, secure storage should be preferred (e.g. non-extractable keys stored on a smartcard and accessed via WebCrypto API).
 
 #### Other Adapters
 
-Support in Node.JS adapter, mod\_authn\_oidc and Keycloak Gatekeeper could be also considered.
+Support in Node.JS adapter and mod\_authn\_oidc could be also considered.
 
 ### Admin UI
 
@@ -233,6 +229,25 @@ DPoP usage should be properly documented.
 Affected documents:
 
 *   Securing Applications and Services Guide
+
+## Milestones
+### M1 Core DPoP
+* Models, libraries, endpoints, admin UI
+* `authorization_code` and `refresh_token` grants
+
+### M2 Adapters
+* support in Java adapters
+* support in JavaScript adapter
+
+### M3 Advanced DPoP
+* support for additional grant types:
+	* client credentials
+	* ROPC
+	* token exchange
+	* extension grants
+	* UMA
+* support for WebCrypto API in JavaScript adapter
+
     
 ## Open Questions
 
