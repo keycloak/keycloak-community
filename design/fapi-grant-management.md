@@ -16,7 +16,7 @@ These parameters should be added to the .well-known/openid-configuration:
 
 - **grant_management_actions_supported**
 
-OPTIONAL. JSON array containing the actions supported by the AS. Allowed values are query, revoke, update, create.
+JSON array containing the actions supported by the AS. Allowed values are query, revoke, update, create.
 
 - `query`: the AS allows clients to query the permissions associated with a certain grant.
 - `revoke`: the AS allows clients to revoke grants.
@@ -25,7 +25,7 @@ OPTIONAL. JSON array containing the actions supported by the AS. Allowed values 
 If omitted, the AS does not support any grant managenent actions.
 
 - **grant_management_endpoint**
-  OPTIONAL. URL of the authorization server's Grant Management Administration Endpoint.
+  URL of the authorization server's Grant Management Administration Endpoint.
 
   
 FAPI Grant Management consist of 2 parts:
@@ -72,9 +72,6 @@ Content-Type: application/json
    "scopes":[
       {
          "scope":"contacts read write",
-         "resources":[
-            "https://rs.example.com/api"
-         ]
       },
       {
          "scope":"openid"
@@ -114,7 +111,7 @@ Authorization: Bearer 2YotnFZFEjr1zCsicMWpAA
 
 HTTP/1.1 204 No Content
 ````
-The AS MUST revoke the grant and all refresh tokens issued based on that particular grant, it SHOULD revoke all access tokens issued based on that particular grant.
+The AS revoke the grant and all refresh tokens issued based on that particular grant, it revoke all access tokens issued based on that particular grant.
 #### Error Responses:
 
 If the resource URL is unknown, the authorization server responds with HTTP status code 400.
@@ -133,7 +130,7 @@ String value identifying an individual grant managed by the AS for a certain cli
 
 - **scopes**
 
-JSON array where every entry contains the scope parameter value and (optionally) any resource parameter value as defined in [@!RFC8707] passed in the same authorization request. The AS MUST maintain the scope and resource values passed in different authorization requests in separate objects of the JSON structure in order to preserve their relationship.
+JSON array where every entry contains the scope parameter value.
 
 - **claims**
 
@@ -145,12 +142,24 @@ JSON Object as defined in [@!I-D.ietf-oauth-rar] containing all authorization de
 
 - **status**
 
-- **client_id**
+
+- **client_ids**
+
+Client id of different clients which are sharing the grant.
+This will depend on server metadata `subject_types_supported`:
+-  `public`
+it means only one client id will be saved. That client id can be extract from the authorization request.
+-  `pairwise`
+ All the client ids in relation with sector_identifier will be saved.
+
 
 - **created_at**
 
+Creation date
+
 - **updated_at**
 
+Date uptade
 
 
 
@@ -164,7 +173,7 @@ The spec introduces the authorization request parameters `grant_id` and `grant_m
 
  `create`: the AS will create a fresh grant if the AS supports the grant management action create.
 
- `update`: this mode requires the client to specify a grant id using the grant_id parameter. If the parameter is present and the AS supports the grant management action update, the AS will assign all permissions as consented by the user in the actual request to the respective grant.
+ `update`: this mode requires the client to specify a grant id using the grant_id parameter. If the parameter is present, and the AS supports the grant management action update, the AS will assign all permissions as consented by the user in the actual request to the respective grant.
 The following example shows how a client may ask the authorization request to use a certain grant id:
 
 ````
@@ -178,15 +187,26 @@ GET /authorize?response_type=code&
      &code_challenge=K2-ltc83acc4h... HTTP/1.1
 Host: as.example.com 
 ````
-#### Authorization Error Response
-In case the `grant_id` is unknown or invalid, the authorization server will respond with an error code `invalid_grant_id`.
+The authorization request patterns accepted for the grant will be as follows:
 
-in case the AS does not support a grant management action requested by the client, it will respond with the error code `invalid_request`.
+- `grant_management_action=create` and `grant_id` is not specified.
+- `grant_management_action=update` and `grant_id` is specified.
+
+#### Authorization Error Response
+- In case the `grant_id` is unknown or invalid, the authorization server will respond with an error code `invalid_grant_id`.
+
+- In case the AS does not support a grant management action requested by the client, it will respond with the error code `invalid_request`.
+
+- In case `grant_management_action=create` and `grant_id is specified` the authorization server will respond with an error code `invalid_request`.
+
+- In case `grant_management_action=update` and `grant_id is not specified` the authorization server will respond with an error code `invalid_request`.
 
 #### Token Response
 The spec introduces the token response parameter `grant_id`:
 
-`grant_id`: URL safe string value identifying an individual grant managed by the AS for a certain client and a certain resource owner. The grant_id value MUST be unique in the context of a certain authorization server and SHOULD have enough entropy to make it impractical to guess it.
+`grant_id`: URL safe string value identifying an individual grant managed by the AS for a certain client and a certain resource owner. The grant_id value MUST be unique per client.
+
+The grant_id will be a string representation of a UUID as a URN per [[RFC4122](https://tools.ietf.org/html/rfc4122)]
 
 The AS will return a grant_id if it supports any of the grant management actions query, revoke, or update.
 
@@ -222,24 +242,17 @@ TypedQuery<String> query = entityManager.createNamedQuery("findGrantByClientIdAn
 
         query.setFlushMode(FlushModeType.COMMIT);
         query.setParameter("client_id", client_id);
-        query.setParameter("Grant_id", grant_id);
+        query.setParameter("grant_id", grant_id);
 
         List<Grant> result = query.getResultList();
 ````
 ### revoke grant
 ````
-revokeAllAccessAndRefreshTocken(Grant_id)
+revokeAllAccessAndRefreshTocken(grant_id)
 em.remove(grant)
 ````
 ### authorisation request
-AS should accept grant_id and grant_management_action in all endpoint where Authorization request is accepted.
-
-Classes/methods affected:
-
-### token endpoint
-AS should create or update the Grant depending on grant_management_action parameter.
-
-Then add grant_id to token.
+AS should accept grant_id and grant_management_action in all endpoint where Authorization request is accepted. AS should create or update the Grant depending on grant_management_action parameter.
 
 Classes/methods affected:
 
@@ -257,5 +270,5 @@ Affected documents: Securing Applications and Services Guide
 ## Resources
 * [Financial_API_Grant_Management][1]
 
-[1]: https://bitbucket.org/openid/fapi/src/master/Financial_API_Grant_Management.md
+[1]: https://openid.net/specs/fapi-grant-management-01.html
 
