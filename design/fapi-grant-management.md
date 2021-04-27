@@ -143,15 +143,9 @@ JSON Object as defined in [@!I-D.ietf-oauth-rar] containing all authorization de
 - **status**
 
 
-- **client_ids**
+- **client_id**
 
-Client id of different clients which are sharing the grant.
-This will depend on server metadata `subject_types_supported`:
--  `public`
-it means only one client id will be saved. That client id can be extract from the authorization request.
--  `pairwise`
- All the client ids in relation with sector_identifier will be saved.
-
+Client id of client.
 
 - **created_at**
 
