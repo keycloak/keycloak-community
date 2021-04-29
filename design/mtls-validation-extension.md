@@ -29,8 +29,8 @@ This plugin should be deployed inside the Keycloak and should handle all custom 
 - ExtendedCertificateValidation (SPI meant to build validation plugins for different SSL Certificate types)
 
 ### X509ClientCertificateAuthenticator and UI implementation part
-- Admin UI section `Client/Advanced Settings/OAuth 2.0 Mutual TLS Certificate Bound Access Tokens Enabled` should be extended with a flag `Enable custom certificate validation` to be sure that additional validation should be turned on/off for
-  particular client
+- Admin UI section `Client/Advanced Settings` should be extended with a flag `Enable custom certificate validation` to be sure that additional validation should be turned on/off for
+  particular client with possibility to pick corresponding implementation from a drop-down list. 
 - Adding ExtendedCertificateValidation.class as SPI for plugin extension
 - Modification of X509ClientCertificateAuthenticator to with calls to ExtendedCertificateValidation SPI to introspect/validate the certificate if `custom validation is enabled` for current `client`
 
