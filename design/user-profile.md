@@ -81,22 +81,22 @@ Ability to specify when an attribute is required should be quite flexible to cov
 * Allow an admin to create an initial user with only specifying email, then requiring user to fill in first and last names on first login
 * Ask user for missing information after login with a social provider
 
-A very rough idea on how the user profile JSON could look like:
+Format of the User profile JSON configuration settled during implementation in May 2021:
 
     {
         "attributes": [{
             "name": "department",
             "permissions": {
-                    "view": ["admin", "user"], 
-                    "edit": ["admin"],
+                "view": ["admin", "user"], 
+                "edit": ["admin"],
             }
-            "requirement": {
-                "always",
+            "required": {
+                "roles" : ["user", "admin"],
+                "scopes" : ["phone-1", "phone-2"]
             }
-            "validation": {
-                "name", 
-                "context" : ["UserProfileUpdate"],
-                { "length" : { "min" : 10, "max": 20 } },
+            "validations": {
+                "length" : { "min" : 10, "max": 20 },
+                "startsUppercase" : {}
             },
             "converter": {
                 "datetime-converter": {
@@ -115,30 +115,50 @@ A very rough idea on how the user profile JSON could look like:
             }
         }]
     }
+    
+Some configuration sections use these pseudo-roles:
+* `user` - any place where user is involved - activities during authentication flow, Account console and related User Account REST API. User can view/edit only their own attributes in these use cases.
+* `admin` - activities from User management part of the Admin REST API (covers Admin console). It is expected that this part will be evolved in the future to use Roles defined for realm in the admin console to allow fine grained control for attributes access.
 
-### Required Fields
 
-Requirement should support following values:
+JSON configuration contains `attributes` field which defines user profile attributes available in the realm. It is an array of attribute definition objects configuring individual attributes.
 
-* `optional` (default if no value given)
-* `always`
-* `user`
-* `{ "scope" : "scope-1" }`
-* `{ "scope" : [ "scope-1", "scope-2" ] }`
+Attribute definition object contains `name` field with name of the attribute being configured by it. `name` it is required, must be unique in the array. Can contain only lowercase and uppercase letters, numbers and special characters `.`, `-` and `_`
 
-The `user` requirement allows an admin to create a user without specifying the value, while the user will then be required to enter the value on first login.
+Attribute definition object contains other sections described later.
 
-The `scope` requirement allows an attribute to only be required when a specific client scope is being requested.
+### Permissions
 
-### Validation
+Optional `permissions` structure is used to define permissions for the attribute. If not set then no any permissions are set for the attribute. If set it allows to define permissions:
 
-Validation should support the following values:
+* `view` - array of strings containing pseudo-roles who can view attribute value, nobody can view it if no any role is named here. `username` and `email` fields are always visible to the user even if not configured here. `username` is always visible to admin even if not configured here.
+* `edit` - array of strings containing pseudo-roles who can edit attribute value, nobody can edit it if no any role is named here. `username` and `email` fields may or may not be editable based on other realm settings, configuration here is not important for them if realm business rules do not allow them to be edited.
 
-* `validator-id`
-* `{ "validator-id" : "<config>" }`
-* `{ "validator-id" : { ... } }`
 
-This will allow using built-in validators as well as adding custom validators. A validator can take an option config either as a single field, or a JSON object.
+### Required attributes
+
+Rules defining when is Attribute required are expressed by `required` config structure. Attribute is NOT required if this option is not defined at all. 
+
+If no any rule is defined inside of this structure attribute is ALWAYS required:
+
+```
+"required" : {}
+```
+
+Specific rules can be defined using options:
+* `roles` - optional array of strings containing pseudo-roles which has attribute required - allows case when administrator provisions account without some attribute, but user have to fill it in during first login.
+* `scopes` - optional array of strings containing names of auth flow scopes for which is attribute required. Default client scopes are taken into account also, so required attributes can be defined per client. This section has no effect when the `roles` section contains `user` as attribute is always mandatory then for all auth flow scopes then.
+
+Note: `username` and `email` can be required based on the important realm setting (mainly “email as username”) - they will be required automatically by `UserProfileProvider `java code when necessary, `required` setting is ignored for these attributes.
+
+
+### Validations
+
+Configuration allows to define format/business validations for attribute. “required” validation is not configured here as it is driven by `required` rules. `username` and `email` fields can have some validations dependent on the realm setting (“email as username”, “email unique” etc) and they are not configured here to keep config simple (they will be added automatically by UserProfileProvider java code when necessary).
+
+Validations are defined in `validations` object contains key/value pairs where:
+* `key` is name/id of the Validator defined/implemented in Validation SPI (mandatory). 
+* `value` is configuration of the Validator for this validation. It is formed as object with key value pairs, values can be text, number, boolean, array of values etc (will depend on Validator SPI). Each Validator defines its own possible configuration options. Configuration can be empty object if Validator doesn’t require any configuration.
 
 Built-in validators should cover:
 
@@ -150,23 +170,14 @@ Built-in validators should cover:
 * URL
 * Date
 
-There will be a user attribute SPI allowing custom validators to be created.
-
-Validators can also be attached to a special context meaning the validation will only be performed in that specific context.
-This allows distinguishing admin and user validation. For example, an admin may create a user without first and last name, but the user must provider these upon login.
-
-Possible contexts include:
-
-* UpdateProfile
-* UserRegistration
-* UserResource
-* Account
-* Registration
+There will be a SPI allowing custom validators to be created.
 
 ### Converter (optional)
 
 Converters can be used to preprocess an attribute value before storing it.
 A converter may also affect the "read" process.
+
+Converters are not being implemented for now (May 2021), support may be added later and configuration format of this section may change then.
 
 ### Annotations
 
@@ -208,7 +219,7 @@ If validation doesn't pass a generic error message will be displayed at the top,
 
 ### Actions
 
-The update profile action will be expanded to cover attributes in a similar fasion to the registration form. Further, it will support only asking for the fields that are not currently passing validation. 
+The update profile action will be expanded to cover attributes in a similar fashion to the registration form. Further, it will support only asking for the fields that are not currently passing validation. 
 
 This will enable use-cases such as not asking users for their birthdate until a client requests the scope birthdate. It will also enable adding additional required attributes, which users will be required to add on the next login.
 
