@@ -31,10 +31,6 @@ The presence of "pushed_authorization_request_endpoint" is sufficient for a clie
 
 Boolean parameter indicating whether the authorization server accepts authorization request data only via the pushed authorization request method. If omitted, the default value is "false"
 
-- **request_uri_lifespan**
-
-A JSON number that represents the lifetime of the request URI in seconds as a positive integer, the default value 60.
-
 
 ### Client Metadata
 
@@ -142,7 +138,7 @@ Cache-Control: no-cache, no-store
 
 The request URI corresponding to the authorization request posted. This URI is used as reference to the respective request data in the subsequent authorization request only.
 
-The format of the "request_uri" value is at the discretion of the authorization server but it MUST contain some part generated using a cryptographically strong pseudorandom algorithm such that it is computationally infeasible to predict or guess a valid value. The authorization server MAY construct the "request_uri" value using the form "urn:ietf:params:oauth:request_uri:<reference-value>" with "<reference-value>" as the random part of the URI that references the respective authorization request data. The string representation of a UUID as a URN per [[RFC4122](https://tools.ietf.org/html/rfc4122)] is also an option for authorization servers to construct "request_uri" values. The "request_uri" value MUST be bound to the client that posted the authorization request.
+As per spec, the format of the "request_uri" value is at the discretion of the authorization server but it MUST contain some part generated using a cryptographically strong pseudorandom algorithm such that it is computationally infeasible to predict or guess a valid value. The authorization server MAY construct the "request_uri" value using the form "urn:ietf:params:oauth:request_uri:<reference-value>" with "<reference-value>" as the random part of the URI that references the respective authorization request data. The string representation of a UUID as a URN per [RFC4122] is also an option for authorization servers to construct "request_uri" values. The "request_uri" value MUST be bound to the client that posted the authorization request.
 
 - **expires_in**
 
@@ -189,8 +185,8 @@ Classes/methods affected:
 * org.keycloak.protocol.oidc.OIDCWellKnownProvider
     * getConfig()
 
-### Server Metadata request_uri_lifespan configuration
-The default lifetime of request_uri should be 60 seconds
+### Server Metadata pushed_authorization_request_endpoint parameter
+Par endpoint
 
 Classes/methods affected:
 
@@ -204,14 +200,13 @@ when `false`, PAR is not mandatory
 
 when `true`, PAR is mandatory
 
-Classes/methods affected:
+This parameter should be saved as Client attributes using `org.keycloak.models.ClientModel`
 
-* org.keycloak.models.ClientModel
-* org.keycloak.models.cache.infinispan.ClientAdapter
-* org.keycloak.models.cache.infinispan.entities.CachedClient
-* org.keycloak.models.jpa.ClientAdapter
-* org.keycloak.models.jpa.entities.ClientEntity
-* org.keycloak.models.map.client.AbstractClientEntity
+###  PAR configuration
+
+Par configuration should be saved as Realm attributes using `org.keycloak.models.RealmModel`
+A dedicated class for all Par configuration : `org.keycloak.models.ParConfig` (cf. OAuth2DeviceConfig)
+
 
 ### The PAR endpoint 
 
@@ -235,14 +230,13 @@ Classes/methods to be added:
 /**
  * OAuth 2.0 PAR request endpoint
  */
-public class ParEndpoint extends AuthorizationEndpointBase {
+public class ParEndpoint implements RealmResourceProvider {
 
     /**
      * Handles PAR requests.
      *
      * @return the PAR response.
      */
-    @Path("par")
     @POST
     @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
     @Produces(MediaType.APPLICATION_JSON)
@@ -251,34 +245,130 @@ public class ParEndpoint extends AuthorizationEndpointBase {
     }
     
 }
+
+public class ParEndpointFactory implements RealmResourceProviderFactory {
+
+    @Override
+    @Path("/par")
+    public RealmResourceProvider create(KeycloakSession session) {
+        ParEndpoint provider = new ParEndpoint(session);
+        ResteasyProviderFactory.getInstance().injectProperties(provider);
+        return provider;
+    }
+
+    @Override
+    public void init(Config.Scope config) {
+
+    }
+
+    @Override
+    public void postInit(KeycloakSessionFactory factory) {
+
+    }
+
+    @Override
+    public void close() {
+
+    }
+
+    @Override
+    public String getId() {
+        return "par";
+    }
+}
+
+```
+
+### Par Request Validation
+A Class containing the different validation of the Par request
+(Authenticate the client, validate Authz request, check request_uri, ...)
+```
+/**
+* Helper Class for Par validation
+*/
+public class ParValidationService {}
 ```
 
 ### Generation of request_uri
-As per spec,
 
-The format of the "request_uri" value is at the discretion of the authorization server but it MUST contain some part generated using a cryptographically strong pseudorandom algorithm such that it is computationally infeasible to predict or guess a valid value. The authorization server MAY construct the "request_uri" value using the form "urn:ietf:params:oauth:request_uri:<reference-value>" with "<reference-value>" as the random part of the URI that references the respective authorization request data. The string representation of a UUID as a URN per [RFC4122] is also an option for authorization servers to construct "request_uri" values. The "request_uri" value MUST be bound to the client that posted the authorization request.
+The format of the "request_uri" value is: "urn:ietf:params:oauth:request_uri:<reference-value>"
+with "<reference-value>" generated by : 
+`Base64Url.encode(KeycloakModelUtils.generateSecret())`
 
-Classes to be added:
- * org.keycloak.common.util.RequestUriUtil
-
-### Save the authorization request with the associated request_uri generated + request_uri_lifespan
-It can be done with help of org.keycloak.models.CodeToTokenStoreProvider
+### Save and Retrieve the authorization request with the associated request_uri generated + request_uri_lifespan
+This will be done with a set of class and interfaces (Spi, provider, providerFactory).
 
 ```
-CodeToTokenStoreProvider codeStore = session.getProvider(CodeToTokenStoreProvider.class,"infinispan");
-codeStore.put(request_uri, request_uri_lifespan, request);
+/**
+ * Provides single-use cache for Pushed Authorization Request. The data of this request may be used only once.
+ *
+ */
+public interface PushedAuthzRequestStoreProvider extends Provider {
+
+    /**
+     * Stores the given data and guarantees that data should be available in the store for at least the time specified by {@param lifespanSeconds} parameter
+     * @param redirectUri
+     * @param lifespanSeconds
+     * @param codeData
+     * @return true if data were successfully put
+     */
+    void put(String redirectUri, int lifespanSeconds, Map<String, String> codeData);
+
+
+    /**
+     * This method returns data just if removal was successful. Implementation should guarantee that "remove" is single-use. So if
+     * 2 threads (even on different cluster nodes or on different cross-dc nodes) calls "remove(123)" concurrently, then just one of them
+     * is allowed to succeed and return data back. It can't happen that both will succeed.
+     *
+     * @param redirectUri
+     * @return context data related Pushed Authorization Request. It returns null if there are not context data available.
+     */
+    Map<String, String> remove(String redirectUri);
+    
+}
+```
+
+```
+public interface PushedAuthzRequestStoreProviderFactory extends ProviderFactory<PushedAuthzRequestStoreProvider> {
+}
+```
+
+```
+public class PushedAuthzRequestStoreSpi implements Spi {
+
+    public static final String NAME = "pushedAuthzRequestStore";
+
+    @Override
+    public boolean isInternal() {
+        return true;
+    }
+
+    @Override
+    public String getName() {
+        return NAME;
+    }
+
+    @Override
+    public Class<? extends Provider> getProviderClass() {
+        return PushedAuthzRequestStoreProvider.class;
+    }
+
+    @Override
+    public Class<? extends ProviderFactory> getProviderFactoryClass() {
+        return PushedAuthzRequestStoreProviderFactory.class;
+    }
+}
 
 ```
 
-### Retrieve the authorization request with the request_uri
-
-At the Authorization Endpoint, authorization server must be able to retrieve the authorization request with the request_uri.
-It can be done with help of org.keycloak.models.CodeToTokenStoreProvider
+And then the different implementations
 
 ```
-CodeToTokenStoreProvider codeStore = session.getProvider(CodeToTokenStoreProvider.class,"infinispan");
-Map<String, String> request = codeStore.remove(request_uri);
+public class InfinispanPushedAuthzRequestStoreProvider implements PushedAuthzRequestStoreProvider {}
+```
 
+```
+public class InfinispanPushedAuthzRequestStoreProviderFactory implements PushedAuthzRequestStoreProviderFactory {}
 ```
 
 ### Determine the type of request_uri
@@ -309,16 +399,25 @@ Files/Classes/methods affected:
     * parseRequest
 
 ### Admin UI
-The following configuration options should be exposed in the Admin UI for OIDC clients:
+The following configuration options should be exposed in the Admin UI:
+* In  Realm -> Tokens configuration page
+    * request_uri_lifespan
 
-* request_uri_lifespan
-* require_pushed_authorization_requests
+* In Realm -> General
+    * require_pushed_authorization_requests
+    
+* In Client -> Settings -> Advanced Setting
+    * require_pushed_authorization_requests
+    
 
-Files/Classes/methods affected:
+Files affected:
 
-* org.keycloak.services.resources.admin.ClientResource
-* org.keycloak.representations.idm.ClientRepresentation
 * themes/src/main/resources/theme/base/admin/resources/partials/client-detail.html
+* themes/src/main/resources/theme/base/admin/resources/js/controllers/clients.js
+* themes/src/main/resources/theme/base/admin/messages/admin-messages_en.properties
+  
+* themes/src/main/resources/theme/base/admin/resources/partials/realm-detail.html
+* themes/src/main/resources/theme/base/admin/resources/js/controllers/realm.js
 
 ## Tests
 PAR should be properly covered by unit and integration tests.
