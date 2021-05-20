@@ -14,15 +14,9 @@
 
 These parameters should be added to the .well-known/openid-configuration:
 
-- **grant_management_actions_supported**
+- **grant_id_supported**
 
-JSON array containing the actions supported by the AS. Allowed values are query, revoke, update, create.
-
-- `query`: the AS allows clients to query the permissions associated with a certain grant.
-- `revoke`: the AS allows clients to revoke grants.
-- `update`: the AS allows clients to update existing grants.
-- `create`: the AS allows clients to request the creation of a new grant.
-If omitted, the AS does not support any grant managenent actions.
+Boolean indicating support for provision of grant ids in token responses and use of such grant ids in authorization requests.
 
 - **grant_management_endpoint**
   URL of the authorization server's Grant Management Administration Endpoint.
@@ -140,12 +134,9 @@ JSON array containing the names of all OpenID Connect claims (see [@!OpenID]) as
 
 JSON Object as defined in [@!I-D.ietf-oauth-rar] containing all authorization details as requested and consented in one or more authorization requests associated with the respective grant.
 
-- **status**
+- **user_id**
 
-
-- **client_id**
-
-Client id of client.
+Id of user
 
 - **created_at**
 
@@ -155,25 +146,20 @@ Creation date
 
 Date uptade
 
+- **userConsent**
+
+a ManyToOne relation to UserConsentEntity
 
 
 ### OAuth Protocol Extensions
 #### Authorization Request
-The spec introduces the authorization request parameters `grant_id` and `grant_management_action`. These parameters can be used with any request serving as authorization request.
+The spec introduces the authorization request parameter `grant_id`. This parameter can be used with any request serving as authorization request.
 
 - `grant_id`: OPTIONAL. String value identifying an individual grant managed by a particular authorization server for a certain client and a certain resource owner.
-
-- `grant_management_action`: string value controlling the way the authorization server shall handle the grant when processing an authorization request. The spec defines the following values:
-
- `create`: the AS will create a fresh grant if the AS supports the grant management action create.
-
- `update`: this mode requires the client to specify a grant id using the grant_id parameter. If the parameter is present, and the AS supports the grant management action update, the AS will assign all permissions as consented by the user in the actual request to the respective grant.
-The following example shows how a client may ask the authorization request to use a certain grant id:
 
 ````
 GET /authorize?response_type=code&
      client_id=s6BhdRkqt3
-     &grant_management_action=update
      &grant_id=TSdqirmAxDa0_-DB_1bASQ
      &scope=write
      &redirect_uri=https%3A%2F%2Fclient.example.org%2Fcb
@@ -181,19 +167,12 @@ GET /authorize?response_type=code&
      &code_challenge=K2-ltc83acc4h... HTTP/1.1
 Host: as.example.com 
 ````
-The authorization request patterns accepted for the grant will be as follows:
-
-- `grant_management_action=create` and `grant_id` is not specified.
-- `grant_management_action=update` and `grant_id` is specified.
 
 #### Authorization Error Response
 - In case the `grant_id` is unknown or invalid, the authorization server will respond with an error code `invalid_grant_id`.
 
-- In case the AS does not support a grant management action requested by the client, it will respond with the error code `invalid_request`.
+- In case the AS does not support `grant_id`, it will respond with the error code `invalid_request`.
 
-- In case `grant_management_action=create` and `grant_id is specified` the authorization server will respond with an error code `invalid_request`.
-
-- In case `grant_management_action=update` and `grant_id is not specified` the authorization server will respond with an error code `invalid_request`.
 
 #### Token Response
 The spec introduces the token response parameter `grant_id`:
@@ -202,7 +181,7 @@ The spec introduces the token response parameter `grant_id`:
 
 The grant_id will be a string representation of a UUID as a URN per [[RFC4122](https://tools.ietf.org/html/rfc4122)]
 
-The AS will return a grant_id if it supports any of the grant management actions query, revoke, or update.
+we will use `Base64Url.encode(KeycloakModelUtils.generateSecret())` to generate
 
 Here is an example response:
 ````
@@ -246,7 +225,7 @@ revokeAllAccessAndRefreshTocken(grant_id)
 em.remove(grant)
 ````
 ### authorisation request
-AS should accept grant_id and grant_management_action in all endpoint where Authorization request is accepted. AS should create or update the Grant depending on grant_management_action parameter.
+AS should accept grant_id in all endpoint where Authorization request is accepted. AS should create or update the Grant depending if grant_id is present or not and if `grant_id_supported` is `true`.
 
 Classes/methods affected:
 
