@@ -53,28 +53,23 @@ However, there is some default configuration and behavior keycloak should implem
 
 ### Authorization Server Metadata
 
-These parameters should be added to the .well-known/openid-configuration:
+This parameter must be added to the .well-known/openid-configuration:
 
-- **authorization_details_supported**
+- **authorization_details_types_supported**
 
-The AS advertises support for "authorization_details" using the
-metadata parameter "authorization_details_supported" of type boolean.
-
-
-- **authorization_data_types_supported**
-
-The authorization data types supported can be determined using the metadata parameter "authorization_data_types_supported", which is an JSON array.
+The authorization data types supported can be determined using the metadata parameter "authorization_details_types_supported", which is an JSON array.
 
 ### Client Metadata
 
-- **authorization_data_types**
+- **authorization_details_types**
 
-Clients announce the authorization data types they use in the new dynamic client registration parameter "authorization_data_types".
+Clients announce the authorization data types they use in the new dynamic client registration parameter "authorization_details_types".
 
 
 ### Authorization Request
 
-The `authorization_details` request parameter will be used to specify
+As per spec,
+The `authorization_details` request parameter CAN be used to specify
 authorization requirements in all places where the "scope" parameter
 is used for the same purpose, examples include:
 
@@ -89,6 +84,8 @@ is used for the same purpose, examples include:
 *  Device Authorization Request as specified in [RFC8628],
 
 *  Backchannel Authentication Requests as defined in [OpenID.CIBA].
+
+we will use it first in Authorization requests.
 
 ### Token Response
 
@@ -156,8 +153,6 @@ rarProcessorProvider.processAuthorizationDetails()
 ````
 
 ### Admin UI
-
-AS should give the possibility to activate and deactivate RAR through a checkbox by changing the value of `authorization_details_supported`
 
 AS should allow the possibility to select RarProcessor Implementation Module.
 
