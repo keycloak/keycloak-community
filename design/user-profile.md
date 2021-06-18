@@ -89,11 +89,14 @@ Format of the User profile JSON configuration settled during implementation in M
             "permissions": {
                 "view": ["admin", "user"], 
                 "edit": ["admin"],
-            }
+            },
             "required": {
                 "roles" : ["user", "admin"],
                 "scopes" : ["phone-1", "phone-2"]
-            }
+            },
+            "selector": {
+                "scopes" : ["phone-1", "phone-2", "phone-optional"]
+            },
             "validations": {
                 "length" : { "min" : 10, "max": 20 },
                 "startsUppercase" : {}
@@ -123,7 +126,7 @@ Some configuration sections use these pseudo-roles:
 
 JSON configuration contains `attributes` field which defines user profile attributes available in the realm. It is an array of attribute definition objects configuring individual attributes.
 
-Attribute definition object contains `name` field with name of the attribute being configured by it. `name` it is required, must be unique in the array. Can contain only lowercase and uppercase letters, numbers and special characters `.`, `-` and `_`
+Attribute definition object contains `name` field with name of the attribute being configured by it. `name` it is required, must be unique in the array. Can contain only lowercase and uppercase letters, numbers and special characters `.`, `-` and `_`.
 
 Attribute definition object contains other sections described later.
 
@@ -134,6 +137,17 @@ Optional `permissions` structure is used to define permissions for the attribute
 * `view` - array of strings containing pseudo-roles who can view attribute value, nobody can view it if no any role is named here. `username` and `email` fields are always visible to the user even if not configured here. `username` is always visible to admin even if not configured here.
 * `edit` - array of strings containing pseudo-roles who can edit attribute value, nobody can edit it if no any role is named here. `username` and `email` fields may or may not be editable based on other realm settings, configuration here is not important for them if realm business rules do not allow them to be edited.
 
+### Selector
+
+Optional `selector` structure allows additional control about when is attribute selected for processing. It sits on top of the permissions setting (so if permissions denies access to the attribute this selector section has no effect, attribute is not used). Attribute is always selected if this section is missing or empty. If attribute is not selected it means that:
+* it is not validated (even required validation is not performed) when user profile is verified
+* it doesn't appear in registration/user update forms
+* it's value can't be changed
+
+Specific rules can be defined using options:
+* `scopes` - optional array of strings containing names of auth flow scopes for which is attribute selected. Default client scopes are taken into account also, so attribute selection can be defined per client. This section is used only during the auth flow and practically allows to control whether is field for given attribute rendered in the registration or user update form even as optional/not required. 
+
+Note: selector has no effect for `username` and `email` fields.
 
 ### Required attributes
 
