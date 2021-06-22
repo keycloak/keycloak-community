@@ -86,6 +86,7 @@ Format of the User profile JSON configuration settled during implementation in M
     {
         "attributes": [{
             "name": "department",
+            "displayName" : "${user_profile.department}",
             "permissions": {
                 "view": ["admin", "user"], 
                 "edit": ["admin"],
@@ -112,7 +113,6 @@ Format of the User profile JSON configuration settled during implementation in M
             "annotations":  {
                 "key": "value",  
                 "framecolor": "red",
-                "gui-order": "1",
                 "type": "dropdown",
                 "defaults" : [1,2,3,5]
             }
@@ -127,6 +127,8 @@ Some configuration sections use these pseudo-roles:
 JSON configuration contains `attributes` field which defines user profile attributes available in the realm. It is an array of attribute definition objects configuring individual attributes.
 
 Attribute definition object contains `name` field with name of the attribute being configured by it. `name` it is required, must be unique in the array. Can contain only lowercase and uppercase letters, numbers and special characters `.`, `-` and `_`.
+
+Attribute definition object contains optional field `displayName` which defines user friendly display name for the attribute used in UI. Name can be entered directly, but field supports keys for localized values as well (for example `${user_profile.department}`). If not defined then `name` itself is used in UI.
 
 Attribute definition object contains other sections described later.
 
