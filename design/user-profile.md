@@ -124,7 +124,8 @@ Some configuration sections use these pseudo-roles:
 * `admin` - activities from User management part of the Admin REST API (covers Admin console). It is expected that this part will be evolved in the future to use Roles defined for realm in the admin console to allow fine grained control for attributes access.
 
 
-JSON configuration contains `attributes` field which defines user profile attributes available in the realm. It is an array of attribute definition objects configuring individual attributes.
+JSON configuration contains `attributes` field which defines user profile attributes available in the realm. It is an array of attribute definition objects configuring individual attributes. 
+Order of attributes in this array is reflected when dynamic user profile forms are rendered in GUI.
 
 Attribute definition object contains `name` field with name of the attribute being configured by it. `name` it is required, must be unique in the array. Can contain only lowercase and uppercase letters, numbers and special characters `.`, `-` and `_`.
 
