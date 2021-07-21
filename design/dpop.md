@@ -1,7 +1,7 @@
 # OAuth 2.0 Demonstrating Proof-of-Possession at the Application Layer (DPoP)
 
 * **Status**: Notes
-* **JIRA**: TBD
+* **JIRA**: [KEYCLOAK-15169](https://issues.redhat.com/browse/KEYCLOAK-15169)
 
 ## Motivation
 
@@ -30,6 +30,15 @@ _([8.1. DPoP Proof Replay][4])_
 
 ### Endpoints
 
+#### Authorization Endpoint
+
+Binding tokens issued directly from the authorization endpoint has been intentionally considered out of scope for the main DPoP draft, and is defined by a separate draft (see Resources).
+In order to support DPoP in implicit and hybrid flows, authorization endpoint must honor the `dpop` request parameter which would contain a DPoP proof.
+
+Classes/methods affected:
+
+* org.keycloak.protocol.oidc.endpoints.AuthorizationEndpoint
+
 #### Token Endpoint
 
 With DPoP enabled, token endpoint must understand the DPoP header and perform binding between the keypair presented thereby and the issued token.
@@ -52,7 +61,6 @@ Classes/methods affected:
 
 * org.keycloak.protocol.oidc.endpoints.TokenEndpoint
   * processGrantRequest()
-        
 
 #### Introspection Endpoint
 
@@ -64,7 +72,6 @@ Classes/methods affected:
 
 * org.keycloak.protocol.oidc.AccessTokenIntrospectionProvider
   * introspect()
-        
 
 #### Metadata Endpoint
 
@@ -76,9 +83,9 @@ Classes/methods affected:
 
 * org.keycloak.protocol.oidc.OIDCWellKnownProvider
 	* getConfig()
-        
+* org.keycloak.protocol.oidc.representations.OIDCConfigurationRepresentation
 
-#### UserInfo
+#### UserInfo Endpoint
 
 The spec doesn’t directly mention the UserInfo endpoint, but it clearly falls into the category of bearer token protected resources:
 
@@ -86,34 +93,48 @@ The spec doesn’t directly mention the UserInfo endpoint, but it clearly falls 
 
 _(OpenID Connect Core 1.0,_ [_5.3. UserInfo Endpoint_][11]_)_
 
-Therefore, the UserInfo endpoint must also be made DPoP-aware.
+Therefore, UserInfo endpoint must also be made DPoP-aware.
 
 Classes/methods affected:
 
 * org.keycloak.protocol.oidc.endpoints.UserInfoEndpoint
 	* issueUserInfo()
-        
+
+#### Logout Endpoint
+
+The `POST` variant of logout invocation uses refresh token, which could be DPoP-bound. Therefore, Logout endpoint must also be made DPoP-aware.
+
+Classes/methods affected:
+
+* org.keycloak.protocol.oidc.endpoints.LogoutEndpoint
+	* logoutToken()
 
 #### Other Endpoints
 
 The following endpoints in Keycloak are public:
 
 * Server Discovery
-* Server JWK set  
-* Authorization  
+* Server JWK set
+* Authorization
 
 The following endpoints don’t use bearer tokens, but rather client credentials:
 
-* Client Registration   
 * Token Introspection
 * Token Revocation
 
 The following endpoints use cookie authentication:
 
-* Logout  
-* Check Session iframe   
+* Check Session iframe
 
 Therefore, no other endpoints should be affected.
+
+#### Client Registration
+Client registration should support DPoP-related parameters inside client metadata.
+
+Classes/methods affected:
+
+* org.keycloak.services.clientregistration.oidc.DescriptionConverter
+* org.keycloak.representations.oidc.OIDCClientRepresentation
 
 ### Models
 
@@ -124,25 +145,21 @@ New property, `jkt`, should be recognized as a member of the `cnf` claim.
 Classes/methods affected:
 
 * org.keycloak.representations.AccessToken.CertConf
-	* rename to Conf or Confirmation; introduce `jwkThumbprint` property
-        
+	* rename to Conf or Confirmation; introduce `keyThumbprint` property
 
 #### Client
 
-Properties should be added to the client model to support the following DPoP-related settings:
+There are the following DPoP-related client settings:
 
 * DPoP mode (enabled/optional/disabled)
 * DPoP proof lifetime (integer)
 * DPoP clock skew (integer)
 
+Those could be backed by client attributes, hence no changes to the client model and DB schema.
+
 Classes/methods affected:
 
-* org.keycloak.models.ClientModel
-* org.keycloak.models.cache.infinispan.ClientAdapter
-* org.keycloak.models.cache.infinispan.entities.CachedClient
-* org.keycloak.models.jpa.ClientAdapter
-* org.keycloak.models.jpa.entities.ClientEntity
-* org.keycloak.models.map.client.AbstractClientEntity
+* org.keycloak.protocol.oidc.OIDCAdvancedConfigWrapper
 
 ### Adapters
 
@@ -150,10 +167,10 @@ Classes/methods affected:
 
 In the Bearer only mode, Java adapters must:
 
-* enforce DPoP proof validation in the “Enabled/Required” mode;  
+* enforce DPoP proof validation in the “Enabled/Required” mode;
 * allow for DPoP validation of DPoP-bound tokens in the “Optional” mode;
 * ignore DPoP proofs in the “Disabled” mode.
-    
+
 The following options should be exposed in the adapter configuration:
 
 * DPoP Mode: required/optional/disabled
@@ -165,7 +182,6 @@ The following options should be exposed in the adapter configuration:
 Classes/methods affected:
 
 *   org.keycloak.adapters.\*
-    
 
 ##### Application Clustering
 
@@ -173,8 +189,8 @@ As per the spec,
 
 > Servers SHOULD store, in the context of the request URI, the `jti` value of each DPoP proof for the time window in which the respective DPoP proof JWT would be accepted and decline HTTP requests to the same URI for which the `jti` value has been seen before.
 
-> :question: How do we implement DPoP proof replay protection in a clustered environment?  
-> 
+> :question: How do we implement DPoP proof replay protection in a clustered environment?
+>
 > Currently, only SAML adapters for Wildfly/AS/JBossWeb support distributed sessions via Infinispan.
 
 #### JavaScript Adapter
@@ -204,9 +220,10 @@ The following configuration options should be exposed in the Admin UI for OIDC c
 
 Files/classes affected:
 
-* org.keycloak.services.resources.admin.ClientResource  
+* org.keycloak.services.resources.admin.ClientResource
 * org.keycloak.representations.idm.ClientRepresentation
 * themes/src/main/resources/theme/base/admin/resources/partials/client-detail.html
+* themes/src/main/resources/theme/base/admin/resources/js/controllers/clients.js
 
 ### Core
 
@@ -216,7 +233,6 @@ Classes affected:
 
 * org.keycloak.jose.jwk.{JWK,RSAPublicJWK,ECPublicJWK}
 	* add `getThumbprint()` method
-        
 
 ### Tests
 
@@ -230,6 +246,14 @@ Affected documents:
 
 *   Securing Applications and Services Guide
 
+## Relation to other token binding mechanisms
+
+In Keycloak, we already have [MTLS Holder-of-Key][16] token binding mechanism. Other mechanisms are emerging, like e.g. [OAuth Proof of Possession Tokens with HTTP Message Signatures][17].
+
+Those mechanisms have a lot in common with DPoP, thus we should consider introducing Token Binding SPI, in order to avoid code duplication and make adding mechanisms easier.
+
+Also it makes sense to allow user to choose only one token binding mechanism per client. This mutually-exclusive behavior would be also easier to implement with Token Binding SPI in place.
+
 ## Milestones
 ### M1 Core DPoP
 * Models, libraries, endpoints, admin UI
@@ -239,16 +263,22 @@ Affected documents:
 * support in Java adapters
 * support in JavaScript adapter
 
-### M3 Advanced DPoP
+### M3 Token Binding SPI
+* introduce Token Binding SPI
+* port MTLS-HoK to the SPI
+* port DPoP to the SPI
+
+### M4 Advanced DPoP
 * support for additional grant types:
 	* client credentials
 	* ROPC
 	* token exchange
 	* extension grants
 	* UMA
+* support DPoP optional mode
+* support for hybrid/implicit flows
 * support for WebCrypto API in JavaScript adapter
 
-    
 ## Open Questions
 
 1.  Which OAuth grant types should be DPoP-enabled?
@@ -259,10 +289,11 @@ Affected documents:
 5.  What is the relationship between DPoP and UMA?
 
 ## Resources
-*   [IETF Draft][1]  
-*   [Illustrated DPoP (OAuth Access Token Security Enhancement)][2]
+* [OAuth 2.0 Demonstrating Proof-of-Possession at the Application Layer (DPoP)][1]
+* [OAuth 2.0 DPoP for the Implicit Flow][15]
+* [Illustrated DPoP (OAuth Access Token Security Enhancement)][2]
 
-[1]: https://tools.ietf.org/id/draft-ietf-oauth-dpop-02.html
+[1]: https://datatracker.ietf.org/doc/draft-ietf-oauth-dpop/
 [2]: https://darutk.medium.com/illustrated-dpop-oauth-access-token-security-enhancement-801680d761ff
 [4]: https://tools.ietf.org/id/draft-ietf-oauth-dpop-02.html#name-dpop-proof-replay
 [6]: https://tools.ietf.org/id/draft-ietf-oauth-dpop-02.html#name-dpop-access-token-request
@@ -272,3 +303,6 @@ Affected documents:
 [12]: https://github.com/herrmannplatz/axios-keycloak
 [13]: https://github.com/mauriciovigolo/keycloak-angular
 [14]: https://www.rfc-editor.org/rfc/rfc7638.html
+[15]: https://datatracker.ietf.org/doc/html/draft-jones-oauth-dpop-implicit-00
+[16]: https://issues.redhat.com/browse/KEYCLOAK-6771
+[17]: https://datatracker.ietf.org/doc/draft-richer-oauth-httpsig/
