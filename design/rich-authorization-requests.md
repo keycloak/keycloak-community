@@ -2,6 +2,7 @@
 
 * **Status**: Notes
 * **JIRA**: TBD
+* **Implementation**: https://github.com/tnorimat/keycloak/pull/24 
 
 
 ## Motivation
@@ -42,9 +43,9 @@ the payment authorization object:
 
 The type of data contained in authorization details is infinite and depends on the field (Payment, Health, Tax Data, etc...)
 
-Therefore, it will be more scalable to add the processing of authorization details as SPI (e.g. `RarProcessor.Class`). Then, an extension can come with the specific implementation.
+Therefore, it will be more scalable to add the processing of authorization details as SPI (e.g. `RarProcessor.Class`). Then, an extension will come with the specific implementation.
 
-However, there is some default configuration and behavior keycloak should implement:
+However, there is some default configuration and behavior which should be implemented:
 
 - Add parameters in Authorization Server Metadata
 - Add parameters in Client Metadata
