@@ -43,6 +43,9 @@ the payment authorization object:
 
 The type of data contained in authorization details is infinite and depends on the field (Payment, Health, Tax Data, etc...)
 
+RAR can be used in combination with PAR (Pushed Authorization
+Request ), for large authentication_details for example.
+
 Therefore, it will be more scalable to add the processing of authorization details as SPI (e.g. `RarProcessor.Class`). Then, an extension will come with the specific implementation.
 
 However, there is some default configuration and behavior which should be implemented:
@@ -59,6 +62,11 @@ This parameter must be added to the .well-known/openid-configuration:
 - **authorization_details_types_supported**
 
 The authorization data types supported can be determined using the metadata parameter "authorization_details_types_supported", which is an JSON array.
+
+- **authorization_details_supported**
+
+The AS advertises support for "authorization_details".
+should be `true`
 
 ### Client Metadata
 
@@ -158,6 +166,21 @@ rarProcessorProvider.processAuthorizationDetails()
 AS should allow the possibility to select RarProcessor Implementation Module.
 
 Files/Classes/methods affected:
+
+### Adapter
+
+Some adapters should be updated in order to support the new authorization_details
+
+Files/Classes/methods affected:
+
+* Keycloak adapter-core (org.keycloak.adapters.OAuthRequestAuthenticator#authenticate)
+
+* Keycloak JS Adapter (loginUrl creation with authorization_details parameter [PoC for Keycloak.js](https://gist.github.com/thomasdarimont/3e87944c31b6263f1849e35733a03500#file-index-html-L204)) 
+  
+* Access to authorization_details in tokenResponse see [keycloak.js](https://github.com/keycloak/keycloak/blob/b1d39aa136662d54deca10c97374f0932ce6316b/adapters/oidc/js/src/main/resources/keycloak.js#L675).
+
+
+
 
 ## Tests
 RAR should be properly covered by unit and integration tests.
