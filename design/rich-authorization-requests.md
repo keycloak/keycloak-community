@@ -63,6 +63,17 @@ This parameter must be added to the .well-known/openid-configuration:
 
 The authorization data types supported can be determined using the metadata parameter "authorization_details_types_supported", which is an JSON array.
 
+Also authorization_details_types_supported will be an aggregated list of all types across all types of processor providers. Regarding collisions, we will add something like `getPriority` to the processor methods, this will allow that custom processor provider to be chosen for processing when dealing with the particular conflicting type.
+
+For example: Assume that there will be built-in provider DefaultProcessor, which will support types `my-type-1` and `my-type-2` with priority `1`. Then assume that administrator will deploy his own custom provider with higher priority (EG. `MyCustomProcessor`), which will support types `my-type-2` and `my-type-3` and will have higher priority.
+
+This will ensure that:
+
+authorization_details_types_supported may return all 3 types
+The type `my-type-1` will be processed by default processor
+The type `my-type-3` will be processed by MyCustomProcessor
+The type `my-type-2` exists in both processors, but since `MyCustomProcessor` has higher priority, it will be chosen for processing this request.
+
 - **authorization_details_supported**
 
 The AS advertises support for "authorization_details".
@@ -163,7 +174,7 @@ rarProcessorProvider.processAuthorizationDetails()
 
 ### Admin UI
 
-AS should allow the possibility to select RarProcessor Implementation Module.
+Possibility to choose supported types of authorization_detail types for a client.
 
 Files/Classes/methods affected:
 
@@ -193,4 +204,4 @@ Affected documents: Securing Applications and Services Guide
 ## Resources
 * [draft-ietf-oauth-rar][1]
 
-[1]: https://tools.ietf.org/html/draft-ietf-oauth-rar-04
+[1]: https://tools.ietf.org/html/draft-ietf-oauth-rar-07
