@@ -106,16 +106,16 @@ Or when explicitly passing the `dev` profile:
     kc.[sh|bat] --profile=dev 
 
 In order to change the configuration, you should either pass any of the available options when starting the server or run the 
-`config` command prior to start the server so that any configuration option you set is persisted into the resulting server image. 
+`build` command prior to start the server so that any configuration option you set is persisted into the resulting server image. 
 
-### `Config` Command
+### `Build` Command
 
-The `config` command is a very important command that allows the server to optimize and adapt itself based on new configuration options. This is especially relevant to avoid unnecessary steps when starting the server as well as reduce memory footprint where code may be removed completely depending on the choosen configuration.
+The `build` command is a very important command that allows the server to optimize and adapt itself based on new configuration options. This is especially relevant to avoid unnecessary steps when starting the server as well as reduce memory footprint where code may be removed completely depending on the choosen configuration.
 
-When a configuration is set through the `config` command, it becomes persisted into the resulting server image and implicitly available when
+When a configuration is set through the `build` command, it becomes persisted into the resulting server image and implicitly available when
 starting the server. As a result, this new server image is optimized with the new configuration and you don't need to pass the same configuration properties when running the server.
 
-The server image produced after executing the `config` command indicates the intention to define the base configuration that the server should consider when starting new instances.
+The server image produced after executing the `build` command indicates the intention to define the base configuration that the server should consider when starting new instances.
 
 Users should always prefer to configure the server through this command before starting server instances. The reason being that they
 should expect a faster startup time and lower memory footprint due to optimizations performed during this step.
@@ -124,7 +124,7 @@ For more information about the different configuration options that can be set w
 see the help and usage messages as follows:
 
 ```
-kc.[sh|bat] config --help
+kc.[sh|bat] build --help
 ```
 
 ### Static Options
@@ -136,16 +136,16 @@ Example of a static option is how you change the database vendor.
 For example, to use a PostgreSQL database you should execute the following command:
 
 ```
-kc.[sh|bat] config --db=postgres # re-configure the server so that postgres is set as the default database
+kc.[sh|bat] build --db=postgres # re-configure the server so that postgres is set as the default database
 ```
 
-When running the `config` command any option that was set is going to be persisted so that any attempt
+When running the `build` command any option that was set is going to be persisted so that any attempt
 to start the server does not require to pass all the configuration properties again. They are already part of the new server image.
 
 Any attempt to set a static option when starting the server should give an error to the user. Where static options should only be
-available through the `config` command.
+available through the `build` command.
 
-On the other hand, any other option that can be set when starting the server should also be available through the `config` command 
+On the other hand, any other option that can be set when starting the server should also be available through the `build` command 
 so that they can be persisted and used during optimizations when creating the new server image.
 
 Static options should be properly documented and available when looking at the help and usage messages for the `start` command.
@@ -163,11 +163,11 @@ dynamic option is `http.port`, which you can define as follows:
 kc.[sh|bat] --http-port=8180 # dynamic property passed when starting the server, no need to re-configure the server
 ```
 
-Alternatively, dynamic options can also be used when running the `config` command so that they are persisted and used 
+Alternatively, dynamic options can also be used when running the `build` command so that they are persisted and used 
 to perform any optimization to the new server image. When doing this, you won't need to pass the same options again when starting the server:
 
 ```
-kc.[sh|bat] config --http-port=8180 # dynamic option set when configuring the server
+kc.[sh|bat] build --http-port=8180 # dynamic option set when configuring the server
 kc.[sh|bat] # just start the server
 ```
 
@@ -177,7 +177,7 @@ Dynamic options should be properly documented and available when looking at the 
 kc.[sh|bat] --help
 ```
 
-Users should always prefer to configure the server using the `config` command before starting the server. The reason being that they
+Users should always prefer to configure the server using the `build` command before starting the server. The reason being that they
 should expect a faster startup time and lower memory footprint due to optimizations performed during this step.
 
 ### Property Replacement
@@ -253,10 +253,10 @@ prefixed with `%` following the name of the profile.
 ### Configuration File
 
 By default, Keycloak reads configuration from the `conf/keycloak.properties` file. Users should be able to change the config file
-location by using the `--config-file` CLI option when running the `config` command:
+location by using the `--config-file` CLI option when running the `build` command:
 
 ```
-kc.[sh|bat] config --config-file=/dir/my.properties
+kc.[sh|bat] build --config-file=/dir/my.properties
 ```
 
 Or when starting the server:
@@ -275,10 +275,10 @@ As such we should introduce a high-level option `db` instead of requiring users 
 dialects. Usually, database should be configured as follows:
 
 ```
-kc.[sh|bat] config --db=postgres
+kc.[sh|bat] build --db=postgres
 ```
 
-The database vendor should be configured through the `config` command.
+The database vendor should be configured through the `build` command.
 
 Where the available database vendors should be the following:
 
@@ -484,10 +484,16 @@ By default, only the main providers are enabled and available when building the 
  
 In order to disable a provider, it is necessary to run the `config`. The same goes when enabling a provider. For instance:
 
-    kc.[sh|bat] config --spi-myspi-myprovider-enabled=true|false
+    kc.[sh|bat] build --spi-myspi-myprovider-enabled=true|false
     
 By disabling unwanted providers when configuring the server, users should be able to get a smaller footprint and faster startup time given that
 the provider won't be loaded and initialized when the server starts.
+
+#### Configuring a default provider
+
+In order to configure a default provider, it is necessary to run the `build`. For instance:
+
+    kc.[sh|bat] build --spi-myspi-provider=<provider_id>
 
 ### Features
 
@@ -567,7 +573,7 @@ Configuration Options
 
 Commands
 
-  config       Creates a new server image based on the options passed to this command. Once created, configuration will be read from the server image
+  build       Creates a new server image based on the options passed to this command. Once created, configuration will be read from the server image
                  and the server can be started without passing the same options again. Some configuration options require this command to be executed
                  in order to actually change a configuration. For instance, the database vendor.
 
@@ -587,10 +593,10 @@ Use "kc.sh options" for a list of all command-line options.
 by Red Hat
 ```
 
-To list static configuration options run `kc.[sh|bat] config --help`, which will output something like:
+To list static configuration options run `kc.[sh|bat] build --help`, which will output something like:
 
 ```
-Usage: kc.sh config [OPTIONS]
+Usage: kc.sh build [OPTIONS]
 
 Updates configuration that requires a rebuild of Keycloak
 
