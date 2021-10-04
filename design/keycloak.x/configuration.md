@@ -180,6 +180,20 @@ kc.[sh|bat] --help
 Users should always prefer to configure the server using the `build` command before starting the server. The reason being that they
 should expect a faster startup time and lower memory footprint due to optimizations performed during this step.
 
+### Using the --auto-build option
+
+When using Keycloak for development or testing purposes, users should be able to start the server without necessarily run the `build`
+command first. For that, users can use the `--auto-build` option as follows:
+
+```
+kc.[sh|bat] --auto-build --db=postgres --db-username=keyclok --db-password=******
+```
+
+By using the `--auto-build` option, the server is going to first check whether any static property has changed (e.g.: database) and
+automatically run the `build` command prior to actually starting the server.
+
+The `--auto-build` option is not recommended for production deployments due to the additional overhead to the server startup time.
+
 ### Property Replacement
 
 When setting the value of a property it is possible to include system properties or environment variables in the value. This approach
@@ -471,10 +485,13 @@ For example:
     spi.myspi.myprovider.some-property=value
     
 Whenever makes sense, we should avoid forcing users to use this format if a provider configuration is widely and commonly used by
-users so that we provide a more specific and reduced property name. 
-
-For instance, the `spi-hostname-default-frontend-url` property is a very common configuration when deploying in production and to set it
+users so that we provide a more specific and reduced property name. For instance, the `spi-hostname-default-frontend-url` property is a very common configuration when deploying in production and to set it
 users would just use a shorthand `hostname-frontend-url` property.
+
+As mentioned before, we should favor the `-` character as a separator rather than camel case for compound names. For instance, 
+if the SPI name is `connectionsHttpClient', users should set properties as follows:
+
+    spi.connections-http-client.default.proxy-mappings=<value>
     
 #### Enable/Disable Provider
 
