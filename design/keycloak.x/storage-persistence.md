@@ -1,6 +1,6 @@
 # Keycloak X - Storage / Persistence layer
 
-* **Status**: Draft
+* **Status**: Draft v2
 * **JIRA**: https://issues.redhat.com/browse/KEYCLOAK-7301
 
 ## Goals of this document
@@ -79,18 +79,21 @@ For convenience, definitions of various types of object representation
 and related notions from [storage-architecture.md](storage-architecture.md)
 are repeated below.
 
-* _Logical representation_ of an object is denoted as `Model`. This
+* <a name="_def_logical_representation_"></a>
+  _Logical representation_ of an object is denoted as `Model`. This
   representation is used in the code above storage layer. Examples of models
   existing in the current codebase are `ClientModel` or `RoleModel`.
 
   Mapping of logical representation to the physical representation is done
   via `Adapter`s.
 
-* _Stateless representation_, also called _physical Java representation_
+* <a name="_def_stateless_representation_"></a><a name="_def_physical_representation_"></a>
+  _Stateless representation_, also called _physical Java representation_
   of an object is denoted as `Entity`. This representation contains all
   attributes necessary for serializing the object into the store. Note
   that this Java representation is not necessarily 1:1 representation
-  of the stored object which is named as _storage representation_.
+  of the stored object which is named as <a name="_def_storage_representation_"></a>
+  _storage representation_.
 
   An example of stateless representation is in [MapClientEntityImpl](https://github.com/keycloak/keycloak/blob/master/model/map/src/main/java/org/keycloak/models/map/client/MapClientEntityImpl.java).
 
@@ -111,19 +114,24 @@ vs MySQL, partitioning, different approach to structuring the data).
 
 ### <a name="_vc"></a> Version Compatibility (VC)
 
-A _logical object version_ is a version of a logical object type, e.g. a realm
-or a role. Any change in the data available from model (i.e. getters/setters)
-changes the logical object version. In contrast, adding a method to model
-that operates on existing fields does not change model version.
+<a name="_def_entity_schema_version"></a>
+An _entity schema version_ is a version of storage representation of
+some object, e.g. a realm or a role.
+Any change in the model interfaces (e.g. adding getters/setters)
+might propagate into change in the storage representation, which would
+change entity schema version of that type of objects.
+In contrast, adding a method to model
+that operates on existing fields does _not_ change entity schema version.
 
 For example, [this change in `RoleModel`](https://github.com/keycloak/keycloak/commit/9ef4c7fffd75ed63c49713405083c17e643ff80a#diff-38a40e77fbc7b5c42eb6cda54cf5cd6e)
-added attributes to the roles and thus means update to the logical object version.
+added attributes to the roles and thus means update to the entity schema version.
 On the other hand, [this change in `RoleModel`](https://github.com/keycloak/keycloak/commit/8f7f9e0b9c1ea0a50a4f6292ffa09c856e067c10#diff-38a40e77fbc7b5c42eb6cda54cf5cd6e)
-did operates on data already available in the model, thus the logical object version
+did operates on data already available in the model, thus the entity schema version
 of `RoleModel` remains unchanged.
 
-For each of the logical entities (realm, user, client etc.),
-the _current store version_ is the logical object version that
+<a name="_def_current_store_version_"></a>
+For each of the entities (realm, user, client etc.),
+the _current store version_ is the entity schema version that
 the store uses for writing objects.
 
 Conditions for the readability of an object stored by store of version _N_
