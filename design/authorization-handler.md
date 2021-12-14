@@ -26,23 +26,30 @@ In the next text, it can be assumed that Authorization Handler and Client Scope 
 
 **Note**: We need community feedback on what the best path would be, and if we decide to go with the authorization handler, it would also be great to get a better name for it.
 
-## The Authorization Handler
+## The Client Authorization Handler
 
 A new type of entity will be created in Keycloak that will allow users to configure the behaviour of Static, Dynamic Scopes and RAR in a composable way.
 
-The AuthorizationHandler will be a composite structure consisting of the following pluggable components:
+The ClientAuthorizationHandler will be a composite structure consisting of the following pluggable components:
 
-* The AuthorizationContext initiator
+* The ClientAuthorizationContext initiator
 * A Compliance processor
 * A consent screen enhancer / builder
 * Configured Protocol Mappers.
 
 
-### AuthorizationContext initiator
+### ClientAuthorizationContext initiator
+
+In the text below, when it mentions "Initial Authorization-Endpoint request", it is assumed that it can be any of these "initial request" type f orequests. It won't be mentioned again in the further text for the sake of simplicity.
 
 At the initial step, the authorization data sent by the client can be retrieved from the initial OIDC Authorization-Endpoint request (or Token-Request in the use-cases like CIBA or OAuth2 resource-owner-password-credentials grant). This retrieved data will be referred to as AuthorizationRequest, which means the initial request to Keycloak to start the authentication process.
 
-**NOTE: This design consider just OpenID Connect specification for now (Dynamic scopes and RAR will be OIDC specific when SAML would still only the support for default client scopes as it has today in Keycloak 15 or earlier)**
+**NOTE**: The text above mentions "initial OIDC Authorization-Endpoint request". This is the initial request in the default OAuth2/OIDC Authorization-code flow. However various grants and specifications related to OAuth2 and OpenID Connect allows that initial request is sent in different ways. For example BackchannelAuthenticationEndpoint in case of CIBA, Pushed-Authorization-Request endpoint in case of PAR, DeviceEndpoint in case of OAuth2 Device 
+Grant or TokenEndpoint in case of OAuth2 Resource-Owner-Password-Credentials Grant. All those endpoints are entry point for particular authentication use-case and they can accept `scope` or `authorization_details` parameters. 
+
+SAML, on the other hand, would still only the support the default client scopes as it does today in Keycloak 15 or earlier.
+
+Additionally to everything said above, the `AuthorizationDetails` object will be validated at the beginning of the request, just like Scopes are validated currently in Keycloak by `AuthorizationEndpointChecker.checkValidScope()`.
 
 ### How to parse authorization data
 
@@ -52,22 +59,23 @@ The authorization data is available in the OIDC request by 2 ways:
 
 * In the authorization_details parameter as defined in the [RAR specification](https://datatracker.ietf.org/doc/html/draft-ietf-oauth-rar-07).
 
-Once Keycloak parses the data from any of these 2 parameters, it will save them in the AuthorizationContext object. The idea is to unify the data in the AuthorizationContext in some structure, which will serve as an abstraction layer over the data that was sent via the scope parameter or authorization_details. However Keycloak will still need to have some flag in AuthorizationContext to track how the data were sent. This may be needed for various reasons. 
+Once Keycloak parses the data from any of these 2 parameters, it will save them in the ClientAuthorizationContext object. Note that same request can contain both `scope` and 
+`authorization_details` parameter and hence Keycloak should be able to parse both of them in the same request. The idea is to unify the data in the ClientAuthorizationContext under some structure, which will serve as an abstraction layer over the data that was sent via the scope parameter or authorization_details. However Keycloak will still need to have some flag in ClientAuthorizationContext to track how the data was sent. This may be needed for various reasons. 
 
 For example [Grant Management API specification - section 6.4](https://openid.net/specs/fapi-grant-management-01.html#section-6.4) (not yet supported by Keycloak) allows clients to query Keycloak about the granted consents. Note that the returned structure contains both scope and authorization_details and hence it is needed by KC to track how the particular request was sent.
 
-### AuthorizationContext object
+### ClientAuthorizationContext object
 
-Output of the parsing is AuthorizationContext object, which is a list of AuthorizationDetailsEntry objects. Each AuthorizationDetailsEntry contains data like:
+Output of the parsing is ClientAuthorizationContext object, which is a list of AuthorizationDetailsEntry objects. Each AuthorizationDetailsEntry contains data like:
 
 * JSON with the authorization details
-* AuthorizationHandler used
+* ClientAuthorizationHandler used
 * Source - the parsing method (scope parameter or authorization_details parameter)
 
 #### Java pseudo-structure
 
 ```java
-class AuthorizationContext {
+class ClientAuthorizationContext {
 	/**
  	*  List of entries of parsed values from "scope" parameter and    
       * from "authorization_details" .
@@ -123,7 +131,7 @@ class AuthorizationDetailsJSONRepresentation {
 
 ## Parsing
 
-Assumption of this approach is that there is no limitation on Authorization Handler whether it can be added to the request by “scope” parameter or by “authorization_details” parameter.
+Assumption of this approach is that there is no limitation on ClientAuthorizationHandler whether it can be added to the request by “scope” parameter or by “authorization_details” parameter.
 
 Requests will go through the chain of parsers. By default, we will have three parsers defined:
 * StaticScopeParser
@@ -131,6 +139,9 @@ Requests will go through the chain of parsers. By default, we will have three pa
 * AuthorizationDetailsParameterParser
 
 The **AuthorizationDetailsParameterParser** will go through all values of the “authorization_details” parameter and just use the JSON value as it is. The ClientScope will be determined by the type of authorization_details, which needs to match the name of the client scope.
+
+Note that the `AuthorizationDetailsJSONRepresentation` is supposed to represent `authorization_details` and 
+static and dynamic scopes. See below for the examples on what the JSON from the parsed scope representation looks like.
 
 ### AuthorizationDetailsParameterParser
 
@@ -193,13 +204,13 @@ The client scope will be determined again from the type field.
 
 The request will be rejected in case that there are any unknown scope values or unknown authorization_detail types, which don't correspond to any configured authorization handlers in the realm. The error returned to the client is `invalid_authorization_details` as described in the [RAR specification Section 8](https://datatracker.ietf.org/doc/html/draft-ietf-oauth-rar-07#section-8) or `invalid_scope` as it works today and described in the OAuth2 specification.
 
-### AuthorizationContext in AuthenticationSessionModel
+### ClientAuthorizationContext in AuthenticationSessionModel
 
-The AuthorizationContext can be sent as a field in the AuthenticationSessionModel. Hence it will be available in all the requests of this Authentication session. Existing AuthenticationSession methods “get/setClientScopes” may be deprecated and replaced by “get/setAuthenticationContext”
+The ClientAuthorizationContext can be sent as a field in the AuthenticationSessionModel. Hence it will be available in all the requests of this Authentication session. Existing AuthenticationSession methods “get/setClientScopes” may be deprecated and replaced by “get/setAuthenticationContext”
 
 ## Compliance processor
 
-There will be a chain of policies configured in the admin console for a specific Authorization  Handler. The AuthorizationContext can be processed by this policy chain. Each AuthorizationDetailsEntry will be processed by each of the policy and policy will decide if:
+There will be a chain of policies configured in the admin console for a specific Authorization  Handler. The ClientAuthorizationContext can be processed by this policy chain. Each AuthorizationDetailsEntry will be processed by each of the policy and policy will decide if:
 
 * AuthorizationDetails is required to be rendered on the consent screen
 * AuthorizationDetails is unsupported/invalid/unauthorized and whole client request should be rejected
@@ -210,11 +221,11 @@ Policy is also responsible for processing the consent screen (The moment when a 
 
 ### Naming
 
-Maybe ClientScopesPolicy is ok as a name? IMO any name containing "Authorization" (EG. AuthorizationContextPolicy, AuthorizationDetailsPolicy) can bring the confusion with the authorization services, which also use "Policies"... More wider question if AuthorizationContext itself is good as a name?
+Maybe ClientScopesPolicy is ok as a name? IMO any name containing "Authorization" (EG. ClientAuthorizationContextPolicy, AuthorizationDetailsPolicy) can bring the confusion with the authorization services, which also use "Policies"... More wider question if ClientAuthorizationContext itself is good as a name?
 
 ### Configuration
 
-Policies can be configured at the client scope (or AuthorizationHandler) level. In addition to tab Mappers and Scope, there can be another tab like Policies . By default, each client scope can have only Persistent Consent Policy automatically set (See below for Persistent Consent Policy details).
+Policies can be configured at the client scope (or ClientAuthorizationHandler) level. In addition to the Mappers and Scope tabs, there can be another tab like Policies. By default, each client scope can have only Persistent Consent Policy automatically set (See below for Persistent Consent Policy details).
 
 ### When
 
@@ -413,7 +424,7 @@ The consent screen will now be composed of multiple HTML templates that can be c
 
 The base template will be defined by the static scopes that are sent and configured in the server, just like it’s being done right now.
 
-AuthorizationHandlers will be able to configure some predefined templates to add to this.
+ClientAuthorizationHandlers will be able to configure some predefined templates to add to this.
 
 For now, the following default templates could be considered:
 
@@ -456,17 +467,17 @@ public class ConsentScreenComposer {
 
 Protocol Mappers are right now attached to (Static) Client Scopes, and are executed whenever a scope is requested that matches the configured scopes for a client.
 
-When defining an AuthorizationHandler, for either Dynamic Scopes or RAR, we should offer users the ability to also configure Protocol Mappers that will run when the handler is invoked.
+When defining a ClientAuthorizationHandler, for either Dynamic Scopes or RAR, we should offer users the ability to also configure Protocol Mappers that will run when the handler is invoked.
 
-These mappers will not be any different from the ones already available, but they will have access to the `AuthorizationContext` object.
+These mappers will not be any different from the ones already available, but they will have access to the `ClientAuthorizationContext` object.
 
-Ideally, we should be able to create some generic mappers that will receive configuration on how to handle the data passed in the `AuthorizationContext`, and how to map it to specific claims in the tokens.
+Ideally, we should be able to create some generic mappers that will receive configuration on how to handle the data passed in the `ClientAuthorizationContext`, and how to map it to specific claims in the tokens.
 
 Given the amount of use cases that Dynamic Scopes and RAR would cover, this could prove hard to achieve and custom mappers would be necessary, but we should cover as many use cases as possible with built-in mappers.
 
 ### Example of a new built-in mapper
 
-A mapper that allows the user to define a few JSON Pointers/Paths from a source (UserSession, AuthorizationContext etc) and another JSON Pointer/Path to claims in the tokens.
+A mapper that allows the user to define a few JSON Pointers/Paths from a source (UserSession, ClientAuthorizationContext etc) and another JSON Pointer/Path to claims in the tokens.
 
 For now, we can build a complex JSON Object with json pointers and have Keycloak parse them into the correct format. I.e: `${someClaim.name}` and `${someClaim.lastName}` would be transformed to:
 
@@ -495,7 +506,7 @@ Keycloak will receive the Dynamic Scope and parse it to the common RAR format, s
 
 `GET /auth?scope=openid+groups:123`
 
-The AuthorizationContext object is created, the scope gets parsed to an authorization_details object, resulting in:
+The ClientAuthorizationContext object is created, the scope gets parsed to an authorization_details object, resulting in:
 
 ```json
 {
@@ -509,15 +520,15 @@ The AuthorizationContext object is created, the scope gets parsed to an authoriz
 
 After a policy pass, there’s no policy that prohibits the execution of this authorization context.
 
-The AuthorizationHandler that matches this scope has configured an embedded consent choice, but as the request is already providing a value, the consent screen just has a text for this specific scope.
+The ClientAuthorizationHandler that matches this scope has configured an embedded consent choice, but as the request is already providing a value, the consent screen just has a text for this specific scope.
 
-Mappers that have been configured for this AuthorizationHandler run, having access to the authorization_details and the AuthorizationContext data.
+Mappers that have been configured for this ClientAuthorizationHandler run, having access to the authorization_details and the ClientAuthorizationContext data.
 
 **Scenario 2**: An authorization request sent with the following information:
 
 `GET /auth?scope=openid+groups:*`
 
-The AuthorizationContext object is created, the scope gets parsed to an authorization_details object, resulting in:
+The ClientAuthorizationContext object is created, the scope gets parsed to an authorization_details object, resulting in:
 
 ```json
 {
@@ -531,16 +542,16 @@ The AuthorizationContext object is created, the scope gets parsed to an authoriz
 
 After a policy pass, there’s no policy that prohibits the execution of this authorization context. There may be a policy that allows/denies user interaction for this specific scope.
 
-The AuthorizationHandler that matches this scope has configured an embedded consent choice. As the scope has been sent with a wildcard, the consent screen is built with a dropdown containing all the groups that the user is part of.
+The ClientAuthorizationHandler that matches this scope has configured an embedded consent choice. As the scope has been sent with a wildcard, the consent screen is built with a dropdown containing all the groups that the user is part of.
 
-After User Selection and Consent Screen acceptance, mappers that have been configured for this AuthorizationHandler run, having access to the authorization_details and the AuthorizationContext data, containing the user choice. 
+After User Selection and Consent Screen acceptance, mappers that have been configured for this ClientAuthorizationHandler run, having access to the authorization_details and the ClientAuthorizationContext data, containing the user choice. 
 
 Scenario 3: An authorization request sent with the following information:
 
 GET /auth?scope=openid+tenants:tenantA#groups:123
 
 
-The AuthorizationContext object is created, the scope gets parsed to an authorization_details object, resulting in:
+The ClientAuthorizationContext object is created, the scope gets parsed to an authorization_details object, resulting in:
 
 	Note: This one may be way more tricky to map to a RAR format, as we have a
   	composite type (tenants/groups). We may need to pre-define types for these
@@ -561,11 +572,11 @@ The AuthorizationContext object is created, the scope gets parsed to an authoriz
 
 After a policy pass, there’s no policy that prohibits the execution of this authorization context.
 
-The AuthorizationHandler that matches this scope has configured an embedded consent choice. But the composite scope contains no wildcards, so no need to ask the user to choose. This AuthorizationHandler has a configured text that uses variables from the RAR request such as:
+The ClientAuthorizationHandler that matches this scope has configured an embedded consent choice. But the composite scope contains no wildcards, so no need to ask the user to choose. This ClientAuthorizationHandler has a configured text that uses variables from the RAR request such as:
 
 "Allow the client to get details of group `${identifier.group}` in tenant `${identifier.tenant}`”
 
-After User Selection and Consent Screen acceptance, mappers that have been configured for this AuthorizationHandler run, having access to the authorization_details and the AuthorizationContext data, containing the user choice. 
+After User Selection and Consent Screen acceptance, mappers that have been configured for this ClientAuthorizationHandler run, having access to the authorization_details and the ClientAuthorizationContext data, containing the user choice. 
 
 ## Admin UI changes
 
