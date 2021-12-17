@@ -45,7 +45,7 @@ The new operator will expose two main ways of configuring business objects in Ke
 
 Static configuration will be strictly read-only, therefore two-way syncing is not going to be needed.
 
-Static configuration is going to provide an immutable and cloud native way for managing business objects in Keycloak that can be easily moved between environments (e.g. dev, stage, prod) in a predictible manner. This feature will leverage the new Store.X which enables federation of the configuration from multiple sources (static/dynamic) by architecting the storage layer.
+Static configuration is going to provide an immutable and cloud native way for managing business objects in Keycloak that can be easily moved between environments (e.g. dev, stage, prod) in a predictable manner. This feature will leverage the new Store.X which enables federation of the configuration from multiple sources (static/dynamic) by re-architecting the storage layer.
 
 #### Static configuration through Git
 
@@ -55,7 +55,9 @@ The `Keycloak` CRD will enable defining a specific commit (identified by an hash
 
 The operator will leverage dedicated CRD(s), initially, there will be only one `Realm` CRD directly translated from Keycloak's [RealmRepresentation](https://github.com/keycloak/keycloak/blob/c7134fd5390d7c650b3dfd4bd2a2855157042271/core/src/main/java/org/keycloak/representations/idm/RealmRepresentation.java). A Realm includes all subresources. As a result, it is going to be possible to configure every object in Keycloak through this CR even though for some of them it won't be recommended (e.g. Users). To implement this, the operator will simply translate the CRs to YAML files and mount them to Keycloak pods, again leveraging Store.X.
 
-It's purpose of the upcoming Store.X initiative to provide a full fledged static configuration backend for Keycloak but there will be a mid-term preview to enable bulk imports at startup time leveraging the REST api.
+It will be possible to store any credentials as Secrets in K8s leveraging [Keycloak Vault functionality](https://www.keycloak.org/docs/latest/server_admin/index.html#_vault-administration) where possible.
+
+It's purpose of the upcoming Store.X initiative to provide a full-fledged static configuration backend for Keycloak but there will be a mid-term preview to enable bulk imports at startup time leveraging the REST api.
 
 ### Keycloak versions alignment
 
@@ -91,7 +93,7 @@ The operator will provide CR metrics as well as it will provide integration with
 
 ### Ingresses
 
-The operator will provide an out-of-the-box experience using an opinionated default Ingress configuration.
+The operator will provide an out-of-the-box experience using an opinionated default Ingress (Route on OpenShift) configuration. This configuration will support further "manual" modification. Additionally, it will be possible to completely disable this feature.
 
 
 ## Codebase
