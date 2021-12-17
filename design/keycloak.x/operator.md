@@ -69,8 +69,9 @@ In order to upgrade to a newer Keycloak version, the operator will be upgraded f
 
 If custom Keycloak image is not used, the operator will use a default base image. After the operator is upgraded, it automatically upgrades Keycloak too using a newer base image.
 
-
 In case a custom Keycloak image is used, the image will need to be rebuilt to perform the upgrade. This is not going to be operator's responsibility as building a custom image often requires a complex process incl. CI/CD pipelines. After the operator is upgraded, it won't manage any existing Keycloak instances until its custom image is manually rebuilt using the right Keycloak base image aligned with the operator and updated and the image coordinates are updated in the CR.
+
+Store.X will allow zero-downtime rolling upgrades (a Keycloak upgrade performed pod by pod) that will ensure that Keycloak cluster will remain available even when upgrade fails on one of the pods. 
 
 ### Reaugmentation process in Kubernetes
 
@@ -94,6 +95,10 @@ The operator will provide CR metrics as well as it will provide integration with
 ### Ingresses
 
 The operator will provide an out-of-the-box experience using an opinionated default Ingress (Route on OpenShift) configuration. This configuration will support further "manual" modification. Additionally, it will be possible to completely disable this feature.
+
+### Outgoing requests proxy settings
+
+The operator will respect the standard `HTTP_PROXY`, `HTTPS_PROXY` and `NO_PROXY` environmental variables for any outgoing requests. These variables are by default [set by OLM](https://docs.openshift.com/container-platform/4.9/operators/admin/olm-configuring-proxy-support.html). The operator will also pass them to Keycloak pods to leverage the built-in support for them. This behaviour will be overridable. 
 
 
 ## Codebase
