@@ -83,7 +83,7 @@ The artifacts in the kubernetes volume will be produced by an init-container and
 
 ### Connecting to a database
 
-A Postgres DB will have to be provisioned externally, it's not Keycloak Operator's responsibility to manage a database. The DB credentials will be stored as K8s Secrets.
+A Postgres DB instance will have to be provisioned externally, it's not Keycloak Operator's responsibility to manage a database. The DB credentials will be stored as K8s Secrets.
 
 In long-term plan we'll add a limited integration with a Postgres Operator to leverage its backup functionalities for Keycloak upgrades.
 
