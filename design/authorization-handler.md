@@ -1,6 +1,6 @@
-# AuthorizationHandler to process Dynamic Scopes and Rich Authorization Requests (RAR).
+# AuthorizationHandler to process Dynamic Scopes and Rich Authorization Requests (RAR).
 
-* **Status**: Draft #1
+* **Status**: Draft #3
 * **Github Discussion**: https://github.com/keycloak/keycloak/discussions/8532
 
 ## Motivation
@@ -40,12 +40,10 @@ The ClientAuthorizationHandler will be a composite structure consisting of the f
 
 ### ClientAuthorizationContext initiator
 
-In the text below, when it mentions "Initial Authorization-Endpoint request", it is assumed that it can be any of these "initial request" type f orequests. It won't be mentioned again in the further text for the sake of simplicity.
+**NOTE**: The `initial OIDC Authorization-Endpoint request` is the initial request in the default OAuth2/OIDC Authorization-code flow. However various grants and specifications related to OAuth2 and OpenID Connect allows that initial request to be sent in different ways. For example BackchannelAuthenticationEndpoint in case of CIBA, Pushed-Authorization-Request endpoint in case of PAR, DeviceEndpoint in case of OAuth2 Device 
+Grant or TokenEndpoint in case of OAuth2 Resource-Owner-Password-Credentials Grant. All those endpoints are entry point for particular authentication use-case and they can accept `scope` or `authorization_details` parameters.  Any mention to the  "Initial Authorization-Endpoint request" can be assumed to be of any of these "initial request" types.
 
-At the initial step, the authorization data sent by the client can be retrieved from the initial OIDC Authorization-Endpoint request (or Token-Request in the use-cases like CIBA or OAuth2 resource-owner-password-credentials grant). This retrieved data will be referred to as AuthorizationRequest, which means the initial request to Keycloak to start the authentication process.
-
-**NOTE**: The text above mentions "initial OIDC Authorization-Endpoint request". This is the initial request in the default OAuth2/OIDC Authorization-code flow. However various grants and specifications related to OAuth2 and OpenID Connect allows that initial request is sent in different ways. For example BackchannelAuthenticationEndpoint in case of CIBA, Pushed-Authorization-Request endpoint in case of PAR, DeviceEndpoint in case of OAuth2 Device 
-Grant or TokenEndpoint in case of OAuth2 Resource-Owner-Password-Credentials Grant. All those endpoints are entry point for particular authentication use-case and they can accept `scope` or `authorization_details` parameters. 
+At the initial step, the authorization data sent by the client can be retrieved from the initial Authorization-Endpoint request. This retrieved data will be referred to as AuthorizationRequest, which means the initial request to Keycloak to start the authentication process.
 
 SAML, on the other hand, would still only the support the default client scopes as it does today in Keycloak 15 or earlier.
 
@@ -219,7 +217,7 @@ Policy can also “enrich” and/or change authorizationDetails entries as somet
 
 Policy is also responsible for processing the consent screen (The moment when a user submits the consent screen, which can happen multiple times during a single “authentication session” due the fact that more consent screens would be possible with this proposal).
 
-### Naming
+### Naming
 
 Maybe ClientScopesPolicy is ok as a name? IMO any name containing "Authorization" (EG. ClientAuthorizationContextPolicy, AuthorizationDetailsPolicy) can bring the confusion with the authorization services, which also use "Policies"... More wider question if ClientAuthorizationContext itself is good as a name?
 
@@ -227,7 +225,7 @@ Maybe ClientScopesPolicy is ok as a name? IMO any name containing "Authorization
 
 Policies can be configured at the client scope (or ClientAuthorizationHandler) level. In addition to the Mappers and Scope tabs, there can be another tab like Policies. By default, each client scope can have only Persistent Consent Policy automatically set (See below for Persistent Consent Policy details).
 
-### When
+### When
 
 The policies are processed after the user is authenticated and required actions processed. Hence before the render of consent screen. So policies have access to existing authenticated users and current clients.
 In addition, policies are processed after each confirmation of the consent screen (When the user presses “Submit” on the consent screen). This is needed as consent screens in some cases can contain user data and require input from the user (For example there will be a list of accounts on consent screen and users will need to choose one of them).
@@ -280,7 +278,7 @@ enum PolicyVote {
 }
 ```
 
-### Default policy implementations
+### Default policy implementations
 
 
 **Persisted Consent Policy**: Will check persisted UserConsentModel and whether the corresponding AuthorizationDetailsEntry was already persisted. When the user confirms the consent screen, it will save the confirmed UserConsentModel to the DB (store).
@@ -463,6 +461,8 @@ public class ConsentScreenComposer {
 };
 ```
 
+**Consideration for this question**: There's been some work on the consent screen with a few enhancements (https://github.com/keycloak/keycloak/pull/8092). We should review the work done here and adapt it to the needs of this proposal.
+
 ## Configured Protocol Mappers
 
 Protocol Mappers are right now attached to (Static) Client Scopes, and are executed whenever a scope is requested that matches the configured scopes for a client.
@@ -494,13 +494,13 @@ An evolution of this mapper could let users define a JSON Schema with some JSON
 pointers so instead of having a list of mappings, they could define the final structure
 of their claim and where to get the data from.
 
-## Successful Authentication Outcomes
+## Successful Authentication Outcomes
 
 In this section, we’re going to showcase how a Dynamic Scope would be parsed and processed by the system.
 
 Keycloak will receive the Dynamic Scope and parse it to the common RAR format, so it’s not necessary to go through successful outcomes for RAR.
 
-### Dynamic Scope successful outcomes
+### Dynamic Scope successful outcomes
 
 **Scenario 1**: An authorization request sent with the following information:
 
