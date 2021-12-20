@@ -99,7 +99,7 @@ Send POST request to the `Device Authorization Endpoint` like below.
 ```
 curl -X POST \
     -d "client_id=foo" \
-    "http://localhost:8080/realms/test/protocol/openid-connect/device/auth"
+    "http://localhost:8080/auth/realms/test/protocol/openid-connect/auth/device"
 ```
 
 It returns a response like below.
