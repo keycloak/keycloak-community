@@ -71,7 +71,8 @@ If custom Keycloak image is not used, the operator will use a default base image
 
 In case a custom Keycloak image is used, the image will need to be rebuilt to perform the upgrade. This is not going to be operator's responsibility as building a custom image often requires a complex process incl. CI/CD pipelines. After the operator is upgraded, it won't manage any existing Keycloak instances until its custom image is manually rebuilt using the right Keycloak base image aligned with the operator and updated and the image coordinates are updated in the CR.
 
-Store.X will allow zero-downtime rolling upgrades (a Keycloak upgrade performed pod by pod) that will ensure that Keycloak cluster will remain available even when upgrade fails on one of the pods. 
+Store.X will optionally allow zero-downtime rolling upgrades (a Keycloak upgrade performed pod by pod) that will ensure that Keycloak cluster will remain available even when upgrade fails on one of the pods.
+"Recreate" upgrade strategy (all pods gracefully shut down and re-created with new image) will be also available.
 
 ### Reaugmentation process in Kubernetes
 
@@ -84,7 +85,7 @@ The artifacts in the kubernetes volume will be produced by an init-container and
 
 ### Connecting to a database
 
-A Postgres DB instance will have to be provisioned externally, it's not Keycloak Operator's responsibility to manage a database. The DB credentials will be stored as K8s Secrets.
+A Postgres DB instance will have to be provisioned externally, it's not Keycloak Operator's responsibility to manage a database. The DB credentials will be fetched from K8s Secrets.
 
 In long-term plan we'll add a limited integration with a Postgres Operator to leverage its backup functionalities for Keycloak upgrades.
 
