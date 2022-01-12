@@ -46,7 +46,7 @@ Idp Policy - allows users to configure which (if any) identity providers are ava
 Name|Value(s)|Description
 -|-|-
 requirement|ALLOWED / REQUIRED / DISABLED|See: Policy Application > Idp Policies below
-idps|Array of strings|The identity providers included in the policy. An empty array indicates all of the identity providers for the realm.
+idps|Array of strings|The aliases of the identity providers included in the policy. An empty array indicates all of the identity providers for the realm.
 
 Two-Factor Policy - allows users to configure which second factors are available and whether users are required to use them:
 Name|Value(s)|Description
