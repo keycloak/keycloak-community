@@ -37,6 +37,13 @@ The operator will use a CRD representing the Keycloak installation. The CRD will
 
 Since most of the configuration options will come from the Keycloak.X distribution itself, the CRD will also expose appropriate fields for passing any distribution related options to the container, like database connection details (obviously without any credentials), SPIs configuration, etc.
 
+#### PodTemplate
+
+The new operator will provide specific and opinionated CRD fields to tune the Keycloak deployment for the most common use-cases, but, one of those knobs will be a customizable [`PodTemplate`](https://kubernetes.io/docs/concepts/workloads/pods/#pod-templates) and the ability to add additional, arbitrary `Volumes`.
+The provided `PodTemplate` will be merged with the properties set by the operator as an "escape hatch" to configure any Kubernetes property is not explicitly exposed by the CRD API.
+
+This approach has been already proved to be successful by, among others, [Flink](https://nightlies.apache.org/flink/flink-docs-master/docs/deployment/resource-providers/native_kubernetes/#pod-template) and [Spark](https://spark.apache.org/docs/latest/running-on-kubernetes.html#pod-template) projects.
+
 ### Configuring Keycloak business objects using Kubernetes resources
 
 The new operator will expose two main ways of configuring business objects in Keycloak (e.g.: Realms, Roles, Clients, etc.) in addition to the built-in Dynamic configuration through the REST API/UI console:
