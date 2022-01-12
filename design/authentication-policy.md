@@ -1,6 +1,5 @@
 # Authentication Policy
 * **Status**: Draft #1
-* **JIRA**: [KEYCLOAK-????](https://issues.jboss.org/browse/KEYCLOAK-????)
 
 ## Motivation
 Configuring the factors used in an authentication process requires changing the authentication flows for a realm, which means applying an advanced feature to common use cases. It also means these requirements cannot vary within a realm without creating custom authenticator implementations, an even more advanced feature. Likewise, identity providers are configured at the realm level and cannot be exposed selectively without extensions.
