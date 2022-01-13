@@ -180,6 +180,31 @@ Users in group acme are REQUIRED  to authenticate with any second factor.
 ]
 ```
 
+Example data-driven policy: users in the Contractors group are required to acknowledge special terms and conditions (a user-defined authenticator), and setting an override for the "version" configuration value to "external"
+```json
+[
+ {
+   "name":"Contractor Terms",
+   "description": "Contractors must accept additional terms and conditions",
+   "group": "contractors",
+   "rules": [
+     {
+       "type":"data-driven",
+       "authenticators": [
+         {
+           "alias": "contractor-terms",
+           "requirement": "REQUIRED",
+           "config": {
+             "version": "external"
+           }
+         }
+       ]
+     }
+   ]
+ }
+]
+```
+
 ALL users are ALLOWED to authenticate with any second factor.(Keycloak default behavior)
 ```json
 [
