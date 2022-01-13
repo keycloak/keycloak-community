@@ -250,7 +250,7 @@ Users with admin role are REQUIRED to authenticate with OTP second factor
    "name":"Admin role two factor",
    "description": "Two factor for acme group",
    "role": "admin",
-   "authenticators": [
+   "rules": [
      {
        "type":"two-factor",
        "requirement": "REQUIRED",
