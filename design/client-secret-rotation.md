@@ -1,11 +1,18 @@
 The idea is to introduce a client secret policy part of client policies, similarly to password policies for users.
 Initially it would not be extensible, but would be just a simple key/value configuration.
 
-We'd have the following options in client secret policy to cover secret rotation:
+We'd have the following options in client secret policy to cover secret rotation. The options `Secret expiration`, `Rotated secret expiration` 
+and `Remaining expiration for rotation during update` are applicable just if `Secret rotation enabled` is ON:
 
-- Secret expiration: [seconds]
-- Secret rotation enabled: [boolean]
-- Rotated secret expiration: [seconds]
+- **Secret rotation enabled: [boolean]**
+- **Secret expiration: [seconds]** - When the secret is rotated, this is the expiration of time of the new secret
+- **Rotated secret expiration: [seconds]** - When secret is rotated, this is the remaining expiration time for the old secret.
+This value should be always smaller than `Secret expiration`. When this is set to 0, the old secret will be immediately removed
+during client rotation.
+- **Remaining expiration for rotation during update: [seconds]** - During dynamic client registration client-update request,
+the client secret will be automatically rotated if the remaining expiration time of the current secret is smaller than the
+value specified by this option. See the example below for more details. This configuration option is relevant only for dynamic client update
+requests. It is not used for admin REST API (Admin Console) requests.
 
 As these options are part of client policies it will be possible to define different values for different groups of clients.
 
@@ -30,7 +37,10 @@ client secret.
 
 There will not be a background task that expires the secrets, nor will there be a background task that updates the secret.
 Expiration of secrets will be done when the client is authenticating, and updating the secrets has to be initiated through client
-update endpoints (dynamic client registration, or KC admin APIs).
+update endpoints (in case of dynamic client registration), or with the request to update client secret (in case of KC admin APIs).
+
+Examples
+--------
 
 As an example for dynamic client registration:
 
@@ -39,6 +49,15 @@ As an example for dynamic client registration:
 - 31 days later the client tries to authenticate, but the authentication is unsuccessful has KC sees the secret has expired
 - Client is updated through a client update request, which will generate a new secret and return it in the response
 - Client can now be updated and authentication is successful again
+
+Another example for dynamic client registration
+
+- Secret rotation is enabled, secret expiration is 30 days, rotated secret expiration is 2 days, Remaining expiration for rotation during update is 10 days.
+- Client is created through a client registration request with a new generated secret
+- 10 days later, client is updated with the call of OIDC client registration update request. At this point, there is 20 days for client secret to expire. Hence client secret won't be rotated during update
+- Another 11 days later, client is updated again with OIDC client registration update request. At this point, there is only 9 days
+of remaining time to client secret expiration. Since this is less than the `Remaining expiration for rotation during update`, the client secret will
+be automatically updated. New secret will be returned in the response of client update request.
 
 A similar example, but with KC Admin UI
 
