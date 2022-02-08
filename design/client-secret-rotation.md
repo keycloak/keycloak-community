@@ -39,6 +39,8 @@ There will not be a background task that expires the secrets, nor will there be 
 Expiration of secrets will be done when the client is authenticating, and updating the secrets has to be initiated through client
 update endpoints (in case of dynamic client registration), or with the request to update client secret (in case of KC admin APIs).
 
+There can be a maximum of two secrets at the same time, the new/current secret and the rotated secret
+
 Examples
 --------
 
