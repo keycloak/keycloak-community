@@ -2,9 +2,8 @@ The idea is to introduce a client secret policy part of client policies, similar
 Initially it would not be extensible, but would be just a simple key/value configuration.
 
 We'd have the following options in client secret policy to cover secret rotation. The options `Secret expiration`, `Rotated secret expiration` 
-and `Remaining expiration for rotation during update` are applicable just if `Secret rotation enabled` is ON:
+and `Remaining expiration for rotation during update` are applicable just if the policy is applied to the client:
 
-- **Secret rotation enabled: [boolean]**
 - **Secret expiration: [seconds]** - When the secret is rotated, this is the expiration of time of the new secret
 - **Rotated secret expiration: [seconds]** - When secret is rotated, this is the remaining expiration time for the old secret.
 This value should be always smaller than `Secret expiration`. When this is set to 0, the old secret will be immediately removed
@@ -22,22 +21,27 @@ Some additional options we may want to add in the future includes:
 - **Length/complexity of the client secrets** if the above is enabled
 - **Enable/disable hashing of secrets**, and configuring the hashing algorithm
 
-By default secret rotation would not be enabled, and Keycloak would have the behaviour it currently has. We would add the
+By default secret rotation policy would not be enabled, and Keycloak would have the behaviour it currently has. We would add the
 client secret creation time though.
 
-If secret expiration is enabled a client secret is no longer valid if:
-```
-secret creation time + secret rotation >= current time.
-```
+If secret expiration policy is applied to a client, the secret validation will occurs as follows:
+
+* During authentication using the main secret, the secret will be invalid if:
+  * `secret creation time + secret expiration < current time`
+* During authentication using the rotated secret, the secret will be invalid if:
+  * The main secret is expired
+  * `rotated secret creation time + rotated secret expiration < current time` 
+
+
 We would also return the `client_secret_expires_at` in OIDC dynamic client registration, as well as the Keycloak Admin APIs.
 
-If secret rotation is enabled the old client secret will be stored as a secondary client secret, and valid until rotated
-secret expiration, or if explicitly removed. For the latter we would need an endpoint to support removing the secondary
-client secret.
+If the secret rotation policy is applied to a client, during the rotation the old client secret will be stored as a secondary client secret, and valid until the rotated expiration time which is `rotation time + rotate secret expiration`, or if explicitly removed. For the latter we will provide an administrative endpoint to invalidate a rotated secret as well as make this functionality available through the administrative interface.
 
 There will not be a background task that expires the secrets, nor will there be a background task that updates the secret.
 Expiration of secrets will be done when the client is authenticating, and updating the secrets has to be initiated through client
 update endpoints (in case of dynamic client registration), or with the request to update client secret (in case of KC admin APIs).
+
+After enabling the policy in the realm, _only after the first login_ on a client whose policy applies or _after the first update_ on this client will the policy be applied and the rules will be validated. This is due to the fact that today it is not contemplated in the keycloak model to update clients after maintaining a policy. A new discussion for this purpose will be created to discuss this feasibility.
 
 There can be a maximum of two secrets at the same time, the new/current secret and the rotated secret
 
@@ -46,7 +50,7 @@ Examples
 
 As an example for dynamic client registration:
 
-- Secret rotation is enabled, secret expiration is 30 days, rotated secret expiration is 2 days
+- Secret rotation policy is enabled, secret expiration is 30 days (2592000 seconds), rotated secret expiration is 2 days (172800 seconds)
 - Client is created through a client registration request with a new generated secret
 - 31 days later the client tries to authenticate, but the authentication is unsuccessful has KC sees the secret has expired
 - Client is updated through a client update request, which will generate a new secret and return it in the response
@@ -54,7 +58,7 @@ As an example for dynamic client registration:
 
 Another example for dynamic client registration
 
-- Secret rotation is enabled, secret expiration is 30 days, rotated secret expiration is 2 days, Remaining expiration for rotation during update is 10 days.
+- Secret rotation policy is enabled, secret expiration is 30 days (2592000 seconds), rotated secret expiration is 2 days (172800 seconds), Remaining expiration for rotation during update is 10 days (864000 seconds).
 - Client is created through a client registration request with a new generated secret
 - 10 days later, client is updated with the call of OIDC client registration update request. At this point, there is 20 days for client secret to expire. Hence client secret won't be rotated during update
 - Another 11 days later, client is updated again with OIDC client registration update request. At this point, there is only 9 days
@@ -65,6 +69,7 @@ A similar example, but with KC Admin UI
 
 - Same settings as above
 - Client is created
+- A client update is triggered
 - After 25 days the admin logs in to KC Admin UI can generates a new client secret
 - The admin updates the client secret in the application
 - The admin can now either log back in to the KC Admin UI and remove the rotated secret, or just leave it as it will be invalid after 2 days
