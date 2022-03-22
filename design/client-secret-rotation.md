@@ -83,3 +83,13 @@ The changes needed in the Admin UI for a client would be:
 This approach allows a global control over client secrets within a realm, and has less changes to the APIs, and is fully
 backwards compatible as there would be no change to the default behaviour. It also fits better into dynamic client
 registration than the previous proposal.
+
+Admin notification events
+-------------------------
+
+Throw an administrative events related to rotation and expiration of secrets.
+- When a client rotates a secret. Client ID and Client Name / Description.
+- When trying to authenticate using an expired rotated secret.
+- When a _percentage_ or _fixed amount_ remains to expire the secret. At this point we can add a new setting to the secret rotation.
+  - Launch notification events when 10% of the time remains
+  - Launch notification events after X seconds
