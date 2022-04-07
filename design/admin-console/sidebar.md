@@ -56,3 +56,17 @@
   * [Add SAML provider](/IdP/saml.md)
 
 * [**User federations**](/UserFederation/ldap.md)
+
+* [**Design conventions**](/Conventions/overview.md)
+  * [Add new row](/Conventions/AddNewRow.md)
+  * [Delete modal](/Conventions/DeleteModal.md)
+  * [Empty state](/Conventions/EmptyState.md)
+  * [Hyperlink](/Conventions/Hyperlink.md)
+  * [Kebab menu](/Conventions/Kebab.md)
+  * [Labels](/Conventions/Labels.md)
+  * [Move group/join group](/Conventions/MoveJoinGroup.md)
+  * [Orders of the objects in table](/Conventions/Order.md)
+  * [Placeholder in the search bar](/Conventions/Placeholder.md)
+  * [Save button bar](/Conventions/SaveButtonBar.md)
+  * [Select role/client scope](/Conventions/SelectRoleOrClientScope.md)
+  * [Upload file](/Conventions/UploadFile.md)
