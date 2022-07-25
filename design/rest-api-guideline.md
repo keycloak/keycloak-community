@@ -88,7 +88,7 @@ Here is an example of a resource path related with the group of functionalities 
 The path refers to the `accounts` group and any resource/operation related with user account management (in this case for user with id `user_id`) can be accessed from that path.
 Note that by grouping functionalities together and in conjunction with the versioning schema, we can keep the root path and also the semantics of the API without impact the adaptability for new changes or improvements to the API.
 
-Group names should be in lowercase and a single word name.
+Group names should be in lowercase and a single word name. In the case that a group is multiple words (e.g. "service accounts"), separate words with dashes (e.g. `service-accounts`).
 
 ##### Compound Group Names
 
