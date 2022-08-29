@@ -92,7 +92,7 @@ Group names should be in lowercase and a single word name. In the case that a gr
 
 ##### Compound Group Names
 
-Under some circunstances, the group can be a compound name. This is the case when APIs are logically related with a common group. For instance, APIs related with the Keycloak Admin API are grouped under:
+Under some circumstances, the group can be a compound name. This is the case when APIs are logically related with a common group. For instance, APIs related with the Keycloak Admin API are grouped under:
 
 ```
 /{realm}/apis/admin/users/v1/{user_id}
