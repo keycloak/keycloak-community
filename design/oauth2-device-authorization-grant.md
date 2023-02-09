@@ -12,7 +12,7 @@
 
 ### Device Authorization Endpoint
 
-In the spec, Device Authorization Endpoint is introduced for authorization request from the device which is an OAuth client. Keycloak has common AuthorizationEndpointBase class which provides common logic like checking realm, SSL and so on. We implement this new endpoint using the common base class. The URL is defined as `/realms/{realmName}/protocol/openid-connect/auth/device` in current implementation proposal.
+In the spec, Device Authorization Endpoint is introduced for authorization request from the device which is an OAuth client. Keycloak has common AuthorizationEndpointBase class which provides common logic like checking realm, SSL and so on. We implement this new endpoint using the common base class. The URL is defined as `/realms/{realmName}/protocol/openid-connect/device/auth` in current implementation proposal.
 
 ### Verification Endpoint
 
