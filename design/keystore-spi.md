@@ -5,14 +5,14 @@
 ## Motivation
 
 This document proposes a new SPI called "KeyStore".
-The purpose of the SPI is to allow an arbitrary number of key stores to be provisioned.
-It also proposes a unified API for handling both credentials and trust anchors, allowing provisioning to be done using both key store files (PKCS#12 or JKS) and PEM files.
 Intended consumers for the API are the various TLS clients and servers in Keycloak.
 
-Currently, the configuration of key stores depends on the TLS client/server implementation and there are a couple of alternatives.
-The JDK default KeyStore is used for clients that rely on the default SSL socket factory.
-HTTPS server uses credentials set using Quarkus configuration (mapped from Keycloak configuration).
+The purpose of the SPI is to allow explicitly setting specific credentials and trust anchors for given use cases and realms.
+Currently, there are a couple of alternatives for the configuration:
 
+
+The JDK default key/trust store is used in use cases that utilize the Java default SSL socket factory.
+HTTPS server uses credentials set using Quarkus configuration (mapped from Keycloak configuration).
 For trust stores, Keycloak currently implements TrustStore SPI.
 It allows users to provide a single additional TrustStore (besides the JDK default), which is supported in specific use cases (see table).
 Since TrustStore SPI provides only one trust store the same set of CA certificates will be shared for all uses.
@@ -35,14 +35,12 @@ Table: Current TrustStore SPI users
 
 ## Use cases
 
-KeyStore SPI shall support the following use cases:
+KeyStore SPI shall allow implementation following use cases:
 
-1. The administrator can configure several individual key stores.
-2. KeyStore SPI consumer requests KeyStore using an identifier.
-The identifier is used to select one of the configured key stores.
-3. The administrator can provision both credentials and trust anchors with KeyStore SPI.
-4. The administrator can configure key stores in PKCS#12 and JKS format, as well as directly as PEM files.
-5. The administrator can renew TLS client and server credentials by swapping the file(s) on disk, without requiring a server restart.
+1. The administrator can separately configure credentials and trust anchors for each TLS client/server implemented by Keycloak.
+2. The administrator can separately configure credentials and trust anchors for each realm.
+3. The administrator can configure credentials and trust anchors in PKCS#12 and JKS format, as well as directly as PEM files.
+4. The administrator can renew TLS client and server credentials by swapping the file(s) on disk, without requiring a server restart.
 
 ## Design proposal
 
@@ -52,52 +50,61 @@ The API proposal for KeyStore SPI is following
 public interface KeyStoreProvider extends Provider {
 
     /**
-     * Load KeyStore of a given identifier.
+     * Creates KeyStore builder for given PKCS#12 or JKS file.
      *
-     * @param keyStoreIdentifier Identifier of the wanted KeyStore.
-     * @return KeyStore.
+     * @param type KeyStore type such as "PKCS12" or "JKS".
+     * @param path Path to the keystore file.
+     * @param password Password used to decrypt the KeyStore.
+     * @return KeyStore builder.
      */
-    KeyStore loadKeyStore(String keyStoreIdentifier);
+    KeyStore.Builder fromKeyStoreFile(String type, String path, String password);
 
     /**
-     * Loads KeyStore of given identifier and returns a KeyStore.Builder.
-     * Builder encapsulates both KeyStore and KeyEntry password(s).
+     * Creates KeyStore builder for given certificate and private key files.
      *
-     * @param keyStoreIdentifier Identifier of the wanted KeyStore.
-     * @return Builder for KeyStore.
+     * @param certs List of paths to certificates.
+     * @param keys List of keys to private keys.
+     * @return KeyStore builder.
      */
+    KeyStore.Builder fromPem(List<String> certs, List<String> keys);
 
-    KeyStore.Builder loadKeyStoreBuilder(String keyStoreIdentifier);
-
+    /**
+     * Creates KeyStore builder for certificate path(s).
+     *
+     * A key store with only certificates is used as trust store.
+     *
+     * @param cert Path to certificate.
+     * @return KeyStore builder.
+     */
+    KeyStore.Builder fromPem(String... cert);
 }
 ```
 
-The identifier is a string that is used to select the correct KeyStore from the configured key stores.
-The method `loadKeyStore()` returns `KeyStore` which can be used with `TrustManager` since no password is required.
-The method `loadKeyStoreBuilder()` returns [`KeyStore.Builder`](https://docs.oracle.com/javase/8/docs/api/java/security/KeyStore.Builder.html) which can be used with `KeyManager`, since the builder encapsulates both `KeyStore` and `KeyEntry` passwords as well, which are required to access the private keys.
+The certificate and key files must be accessible as files on the filesystem.
+The methods return [`java.security.KeyStore.Builder`](https://docs.oracle.com/javase/8/docs/api/java/security/KeyStore.Builder.html) which encapsulates both KeyStore and KeyEntry password(s).
+`KeyStore.Builder` can be used with `KeyManagerFactory` and `TrustManagerFactory`.
 
-The key store identifier is a hierarchical name that identifies the key store.
-For example, the following names could be used:
+```java
+// Initialize KeyManagerFactory with PKCS#12 file.
+keyManagerFactory.init(
+    new KeyStoreBuilderParameters(
+        keyStoreSpi.fromKeyStoreFile("PKCS12", "credentials.p12", "password")));
 
-| Key store identifier | Description |
-|---|---|
-| `ldap-client-keystore` | Key store that includes client certificate, private key and chain certificates for LDAP client |
-| `ldap-client-truststore` | Key store that includes CA certificates for LDAP client |
+// or with PEM files.
+keyManagerFactory.init(
+    new KeyStoreBuilderParameters(
+        keyStoreSpi.fromPem(Arrays.asList("cert.pem"), Arrays.asList("key.pem"))));
 
-The configuration options that are exposed to the administrator could be constructed from the above identifier in the following way:
+// Initialize TrustManagerFactory with PEM file.
+trustManagerFactory.init(
+    keyStoreSpi.fromPem("ca.pem").getKeyStore());
+```
 
-| Configuration option | Description |
-|---|---|
-| `spi-keystore-default-ldap-client-keystore-certificate-file` | Certificate for LDAP client as PEM file |
-| `spi-keystore-default-ldap-client-keystore-certificate-key-file` | Private key for LDAP client as PEM file |
-| `spi-keystore-default-ldap-client-keystore-keystore-file` | Client credentials for LDAP client as PKCS#12 or JKS file |
-| `spi-keystore-default-ldap-client-keystore-keystore-password` | Password for the key store file |
-| `spi-keystore-default-ldap-client-keystore-keystore-type` | Key store type: JKS (default) or PKCS12 |
-| `spi-keystore-default-ldap-client-truststore-certificate-file` | Trusted CA certificate(s) for LDAP client as PEM file |
-| `spi-keystore-default-ldap-client-truststore-keystore-file` | Trusted CA certificate(s) for LDAP client as PKCS#12 or JKS file |
-| `spi-keystore-default-ldap-client-truststore-keystore-type` | Key store type: JKS (default) or PKCS12 |
+The user of the SPI needs to be aware of the paths and the format of the files.
+It is assumed that the paths are provisioned in the following ways:
 
-Alternatively, the configuration options could be mapped to shorthand options.
+- Using existing global configuration options such as [HTTPS server certificate](https://www.keycloak.org/server/enabletls).
+- As part of the realm-specific configuration. This option does not exist today.
 
 ## Implementation details
 
@@ -118,8 +125,15 @@ Default KeyStore SPI shall provide a custom implementation of `KeyStoreSpi` that
 
 The default KeyStore SPI implementation shall support loading KeyStore from PEM files.
 This allows aligning the configuration of different TLS interfaces that Keycloak has.
-Currently, PEM files are supported for the HTTPS credentials only.
+Currently, PEM files are supported for HTTPS credentials only.
 Internally the PEM files can be loaded into `KeyStore`, allowing consumers to remain unaware of the format on disk.
+
+### Realm-specific configuration
+
+An example of realm-specific KeyStore configuration are credentials and trust anchors for LDAP federation.
+Currently, all LDAP connections share the same credentials and trust anchors.
+It should be possible to configure separate client credentials and trust anchors for each LDAP federation.
+
 
 ## Milestones
 
@@ -127,12 +141,6 @@ Internally the PEM files can be loaded into `KeyStore`, allowing consumers to re
 2. Finalize [LDAP SASL EXTERNAL PR](https://github.com/keycloak/keycloak/pull/7365) which initially triggered the work on KeyStore SPI.
 Utilize KeyStore SPI for loading client credentials for SASL EXTERNAL.
 This allows Keycloak to hot-reload client credentials for the LDAP federation.
-3. Migrate HTTPS server to use KeyStore SPI.
+3. Migrate the HTTPS server to use KeyStore SPI.
 This allows Keycloak to hot-reload server credentials.
 Neither Quarkus or Vert.X support hot-reload but Keycloak can pass `KeyManager` (enabled by [Quarkus PR](https://github.com/quarkusio/quarkus/pull/27682)) which can be initialized with `KeyStore` from the default KeyStore SPI implementation.
-
-Further considerations:
-
-It is not necessary to migrate existing TrustStore SPI consumers to KeyStore SPI even if trust anchors can be provisioned using KeyStore SPI.
-However, it can be beneficial in the future for a unified API and implementation to load both credentials and trust anchors.
-It allows having a single place in code to handle key store files, regardless of whether they contain credentials or trust anchors.
