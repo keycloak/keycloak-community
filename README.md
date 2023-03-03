@@ -15,6 +15,10 @@ Proposals for larger new features to be added to Keycloak.
 
 Review of currently implemented specifications and specifications that should be considered.
 
+### [Resources](resources)
+
+Collection of resources relevant to Keycloak.
+
 ### [Library](library)
 
 Collection of resources to learn about technologies relevant to Keycloak.
