@@ -4,3 +4,4 @@
 * [Elytron OIDC](https://wildfly-security.github.io/wildfly-elytron/blog/securing-wildfly-apps-openid-connect/) - OpenID Connect support in WildFly
 * [Pac4j](https://www.pac4j.org/) - The Java security framework to protect all your web applications and web services
 * [Quarkus OIDC](https://quarkus.io/guides/security-openid-connect) - OpenID Connect support for Quarkus applications
+* [Spring Security](https://docs.spring.io/spring-security/reference/servlet/oauth2/index.html) - OAuth and OpenID Connect support in Spring
