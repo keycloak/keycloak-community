@@ -22,16 +22,33 @@ Keycloak being the largest SSO open source software, we want to use this initiat
 https://github.com/FIWARE/keycloak-vc-issuer
 
 ## Roadmap
-In the first step, we will be extending Keycloak to act as a VC Issuer. For that purpose, we will implementing both flows:
-* The pre-authorize flow
-* The auth code flow
+The following map from [Chris](https://github.com/coxchrisw) provides a breakdown of all the functionalities for each participant type in the verifiable credential world.
 
-In the secon step, we will be providing keycloak with the verifier functionality, such as to fit into many federation use cases in use with keycloak today.
+![OID4VC Breakdown](/design/img/oid4vc_mapping_cox.png)
+
+### Credential Issuance - Issuer
+This part addresses the functionality associated with the issuer of a verifiable credential. Keycloak will play both the role of an authorization server and a credential issuer; all the yellow cards are relevant for the first steps as outlined below. Whereby cads with a red square are future or optional.
+
+In this first step, we will extend Keycloak to act as a VC Issuer. We will implement the following flows:
+
+* The pre-authorize code flow. See further detailing in [sequence diagram bellow](#step-1-a-keycloak-issuer---preauthorize-code-flow)
+* The auth code flow. See further detailing in [sequence diagram bellow](#step-1-b-keycloak-issuer---authorization-code-flow)
+
+
+
+### Verification of Presentation - Verifier
+In the second step, we will equip Keycloak with verifier functionality to fit into many federation use cases currently in use with Keycloak. To approach this second step, we will need a detailed design suggestion that outlines where to start, which includes new endpoints and the existing affected endpoints.
+
+### Credential Issuance & Verifiable Presentation - Web Wallet
+At the moment, it is not within the scope of Keycloak to operate as a web wallet, even though this seems like a natural extension of an identity provider. If use cases justify the integration of a web wallet functionality into Keycloak, the corresponding rationales and design suggestions will be added to this architectural document.
+
+### Cryptographic Suites
+Part of this document will deal with the necessary cryptographic suites and an analysis of whether they are already present in the Keycloak codebase or still need to be sourced from third-party projects.
 
 ## Step-1-a: Keycloak Issuer - Preauthorize Code Flow
 This approach appears to be the simplest, as it doesn't necessitate significant extensions in the Keycloak codebase. The [FIWARE](#fiware) implementation previously mentioned encompasses the majority of the required code. However, this implementation depends on components that are not compatible with keycloak licensing model.
 
-The following diagram from [Stefan](https://github.com/wistefan) in issue [OID4VC#17616](https://github.com/keycloak/keycloak/discussions/17616?sort=new#discussioncomment-7326341) displays components needed for the pre-authorized flow, as currently implemented in the [FIWARE](#fiware) codebase:
+The following diagram from [Stefan](https://github.com/wistefan) in issue [OID4VC#17616](https://github.com/keycloak/keycloak/discussions/17616?sort=new#discussioncomment-7326341) displays components needed for the pre-authorized code flow, as currently implemented in the [FIWARE](#fiware) codebase:
 ```mermaid
 sequenceDiagram
     Actor User
@@ -69,29 +86,45 @@ sequenceDiagram
     Credential-Endpoint -->> Wallet: The Credential
 ```
 
+Additional detail from diagram author:
+
 * The flow is using the "Cross-Device Flow"(e.g. Wallet is on a different device than the browser showing the Account Console). 
 * Binding the credential to holder-proof is also not yet provided.
 
-As the diagram illustrates, implementation into Keycloak brings three new Endpoints:
+As the diagram illustrates, implementation into Keycloak brings following modifications:
+
 ### Account Frontend
+
 The modification of the account console to allow for the enrolment of the user wallet.
+
 **To-Do**
-* [] Does this leads to the production of any sort of Client Attestation.
+* [] Does this lead to the production of any sort of Client Attestation.
+
 ### Types Endpoint
+
 **To-Do**
+
 * [] Describe purpose of the Types Endpoint
+
 ### Credential Offer Endpoint
+
 See Credential Offer Endpoint in [OID4VCI](https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html#section-11.2)
+
 **To-Do**
+
 * [] What type of credential will be natively offered by Keycloak?
-* [] Are we planing to provide some sore of generic model based on the current KC user and role data model?
+* [] Are we planing to provide some sort of generic model based on the current KC user and role data model?
 * [] Do we want to design something like a CredentialOfferProvider to allow for plugable credential models?
+
 ### OAuth 2.0 Authorization Server Metadata
+
 This interface will be extended to add: pre-authorized_grant_anonymous_access_supported=true|false
+
 ### Credential Endpoint.
 Whereby it is open to check if it does not make sense to have Token Endpoind directly produce the VC.
 
 ## Step-1-b: Keycloak Issuer - Authorization Code Flow
+
 In this use case, the user's wallet serves as a client, utilizing the OIDC authorization code flow to facilitate user authentication and enable the wallet to request a token from Keycloak's token endpoint. The token provided by Keycloak can then be:
 
 * A typical access token that can subsequently be used by the wallet to obtain the VCs from a separate credential issuer endpoint, or
@@ -141,32 +174,50 @@ Wallet ->> CE: Get Credential(using the AccessToken) /credential
 CE -->> Wallet: Credentials
 ```
 
-The key element of concern here is the Client Attestation. The Keycloak client registration interface wil have to be extended to support some sort of client attestations, whihc are consumable both by keycloak and eventually by external credential issuers that rely on Keycloak for the authentication of the wallet.
+The key element of concern here is the Client Attestation. The Keycloak client registration interface wil have to be extended to support some sort of client attestations, which are consumable both by Keycloak and eventually by external credential issuers that rely on Keycloak for the authentication of the wallet.
 
 From the diagram, we have following resulting todos:
+
 ### Credential Issuer Metadata Endpoint
+
 The Credential Issuer Metadata is specified [here](https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html#section-10.2.2).
+
 ### OAuth 2.0 Authorization Server Metadata
+
 This interface will be extended to add: pre-authorized_grant_anonymous_access_supported=true|false
+
 ### Client Registration Endpoint (DCR)
+
 **To-Do**
+
 * [] Missing clear instruction on how to proceed with the registration of the wallet.
+
 ### RAR Support
+
 **To-Do**
+
 * [] Need details on how to proceed with RAR
+
 ### Attestation Based Client Auth
+
 See: https://datatracker.ietf.org/doc/html/draft-ietf-oauth-attestation-based-client-auth-00
+
 **To-Do**
+
 * [] Design Keycloak extension to support this.
+
 ### Credential Endpoint
+
 See [Credential Endpoint](https://vcstuff.github.io/oid4vc-haip-sd-jwt-vc/draft-oid4vc-haip-sd-jwt-vc.html#section-4.4)
 
 # Additional Resources
 
 ## Working Sessions
+
 Video of [OAuth SIG Breakout Session of 10.19.2023](https://us06web.zoom.us/rec/share/tMnMD-dZqHCNktddGwxQf_ICsR3ImUGNHV3jlAyN0fhli3URSZ2u0I1AtNxWdB5F.tt0iRKaP8wiNap34)
 
 ## Interoperability Matrix
+
 The following table displays some competing initiatives, all implementing OID4VC. This table is managed by GAIN PoC working group at [OID4VC Profiles](https://docs.google.com/spreadsheets/d/1s6REK5eNAb3GSElID0J02_TtbuI2Exd9z-CLdLx0emk/edit?usp=sharing).
 
 There is a attempt to define a baseline profile, that will be supported by all initiatives.
