@@ -10,256 +10,143 @@
 ## Motivation
 OpenID Verifiable Credential Issuance ([OID4VC](https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html)) has been discussed a lot in the Self-Soverin Identity (SSI) especially due to European Commission having released a [Framework](https://digital-strategy.ec.europa.eu/en/library/european-digital-identity-wallet-architecture-and-reference-framework) for eIDASv2. The later tends to chose OID4VC as a protocol to issue Verifiable Credential (VC) and to present Verifiable Presentation (VP).
 
-For simplicity, VC is a token generally either JSON-LD / JWT format issued by OpenID Provider to the User whereas VP is a token presented by User to Relying Party for authentication and authorizations purposes. A VP can be the result of an aggregation of multiples VCs or simply a subset of attributes of a single VC. [OID4VP](https://openid.net/specs/openid-connect-4-verifiable-presentations-1_0-07.html) and [SIOPv2](https://openid.net/specs/openid-connect-self-issued-v2-1_0.html) have been introduced for the purposes of presenting Verifiable Presentation from USER to Relying Party.
+For simplicity, Verifiable Credential (VC) is a token generally either JSON-LD / JWT format issued by OpenID Provider to the User whereas a Verifiable Presentation (VP) is a token presented by User to Relying Party for authentication and authorizations purposes. A VP can be the result of an aggregation of multiples VCs or simply a subset of attributes of a single VC. [OID4VP](https://openid.net/specs/openid-connect-4-verifiable-presentations-1_0-07.html) and [SIOPv2](https://openid.net/specs/openid-connect-self-issued-v2-1_0.html) have been introduced for the purposes of presenting Verifiable Presentation from USER to Relying Party.
 
-As interoperability is a key factor for the success of SSI, there are many initiative working on implementing SSI interoperability. The [Interoperability Matrix](#interoperability-matrix) below displays a list of initiatives and the ongoing compatibility negotiation.
+Currently, they are many competing standards in the world of VC data formats:
+* [Verifiable Credentials based on SD-JWT](https://www.ietf.org/archive/id/draft-terbu-oauth-sd-jwt-vc-00.html#name-verifiable-credentials-base)
+* [W3C Verifiable Credentials Data Model](https://www.w3.org/TR/vc-data-model/)
+* [ISO MDOC - MDLs](https://www.iso.org/standard/69084.html)
+* [JWT-VC](https://github.com/decentralized-identity/did-jwt-vc)
+
+We will be focussing on implementing the first format [SD-JWT VC](https://www.ietf.org/archive/id/draft-terbu-oauth-sd-jwt-vc-00.html#name-verifiable-credentials-base) in this document.
+
+This format build on top of the IETF Draft: [Selective Disclosure for JWTs](https://datatracker.ietf.org/doc/html/draft-ietf-oauth-selective-disclosure-jwt-06)
+
+## Intention of this Document
+This document outlines the design specifications for integrating OID4VC (including OID4VCI and OID4VP) into Keycloak. The implementation aims to ensure interoperability with the GAIN POC and the HAIP profile, while also incorporating additional features relevant to organizational use within Keycloak. This will be pursued as long as contributions are thoroughly reviewed and accepted by the Keycloak maintenance team.
+
+## Interoperability Matrix
+The following table displays some competing initiatives, all implementing OID4VC. This table is managed by OIDF GAIN PoC working group at [OID4VC Profiles](https://docs.google.com/spreadsheets/d/1s6REK5eNAb3GSElID0J02_TtbuI2Exd9z-CLdLx0emk/edit?usp=sharing). There is a attempt to define a baseline profile, that will be supported by all initiatives.
 
 Keycloak being the largest SSO open source software, we want to use this initiative to secure implementation of OID4VC into Keycloak.
 
 ## PoCs
 
-### FIWARE
-https://github.com/FIWARE/keycloak-vc-issuer
+* there is an [existing POC from FIWARE](https://github.com/FIWARE/keycloak-vc-issuer)
 
-## Roadmap
-The following map from [Chris](https://github.com/coxchrisw) provides a breakdown of all the functionalities for each participant type in the verifiable credential world.
+We are calling for any other contribution out there.
 
-![OID4VC Breakdown](/design/img/oid4vc_mapping_cox.png)
+# Visual 
+The following map from [Chris](https://github.com/coxchrisw) provides an [OID4VC Breakdown](/design/img/oid4vc_mapping_cox.png) of all the functionalities for each participant type in the verifiable credential world.
 
-### Credential Issuance - Issuer
-This part addresses the functionality associated with the issuer of a verifiable credential. Keycloak will play both the role of an authorization server and a credential issuer; all the yellow cards are relevant for the first steps as outlined below. Whereby cads with a red square are future or optional.
+# Feature Set
+
+## Credential Issuance - Issuer
+
+This part addresses the functionality associated with the issuer of a verifiable credential. Keycloak will play both the role of an authorization server and a credential issuer. All yellow cards are relevant for the first steps as outlined in [Visuals](#visual). Cads with a red square are future or optional features.
 
 In this first step, we will extend Keycloak to act as a VC Issuer. We will implement the following flows:
 
-* The pre-authorize code flow. See further detailing in [sequence diagram bellow](#step-1-a-keycloak-issuer---preauthorize-code-flow)
-* The auth code flow. See further detailing in [sequence diagram bellow](#step-1-b-keycloak-issuer---authorization-code-flow)
+* The [pre-authorize code flow](./oid4vci/preauthorize-code-flow.md)
+* The [authorization code flow](./oid4vci/authorization-code-flow.md)
 
+## Verification of Presentation - Verifier
+In the second step, we will equip keycloak with verifier functionality to fit into many federation use cases currently in use with Keycloak. To approach this second step, we will need a detailed design suggestion that outlines where to start, which includes new endpoints and the existing affected endpoints.
 
-
-### Verification of Presentation - Verifier
-In the second step, we will equip Keycloak with verifier functionality to fit into many federation use cases currently in use with Keycloak. To approach this second step, we will need a detailed design suggestion that outlines where to start, which includes new endpoints and the existing affected endpoints.
-
-### Credential Issuance & Verifiable Presentation - Web Wallet
+## Verifiable Presentation - Web Wallet
 At the moment, it is not within the scope of Keycloak to operate as a web wallet, even though this seems like a natural extension of an identity provider. If use cases justify the integration of a web wallet functionality into Keycloak, the corresponding rationales and design suggestions will be added to this architectural document.
 
-### Cryptographic Suites
-Part of this document will deal with the necessary cryptographic suites and an analysis of whether they are already present in the Keycloak codebase or still need to be sourced from third-party projects.
+## Verifiable Presentation - Edge Wallet
+The issuance of verifiable presentation will generally be performed by edge wallets. We will be working on wallet prototypes to test and demo use cases implemented into keycloak. 
 
-## Step-1-a: Keycloak Issuer - Preauthorize Code Flow
-This approach appears to be the simplest, as it doesn't necessitate significant extensions in the Keycloak codebase. The [FIWARE](#fiware) implementation previously mentioned encompasses the majority of the required code. However, this implementation depends on components that are not compatible with keycloak licensing model.
+# Technology Outlook
+For the implmentation of an interoperable OID4VC solution, we will be dealing with following technologies
 
-The following diagram from [Stefan](https://github.com/wistefan) in issue [OID4VC#17616](https://github.com/keycloak/keycloak/discussions/17616?sort=new#discussioncomment-7326341) displays components needed for the pre-authorized code flow, as currently implemented in the [FIWARE](#fiware) codebase:
-```mermaid
-sequenceDiagram
-    Actor User
-    box Mobile Phone
-    participant Wallet
-    end
-    box Keycloak Frontend
-    participant AccountConsole
-    end
-    box Keycloak Backend
-    participant Types-Endpoint
-    participant Offer-Endpoint
-    participant OpendID-Configurations-Endpoint
-    participant Token-Endpoint
-    participant Credential-Endpoint
-    end
-    User ->> AccountConsole: logs in
-    AccountConsole ->> Types-Endpoint: Fetch types /types
-    Note right of AccountConsole: all paths are sub-paths of /verifiable-credentials/<issuer-did>
-    Types-Endpoint -->> AccountConsole: Available Types
-    User ->> AccountConsole: select Credential Type
-    Note right of AccountConsole: Steps until now are just for UX,<br/>not part of the spec
-    AccountConsole ->> Offer-Endpoint: Get Offer-URI<br/> /credential-offer-uri?type=<VC>&format=ldp_vc
-    Offer-Endpoint ->> Offer-Endpoint: Generate Authorization code for current user session
-    Offer-Endpoint -->> AccountConsole: Credential Offer URI + (short lived) Authorization Code
-    AccountConsole ->> AccountConsole: generate QR-Code
-    User ->> Wallet: Initiate QR-Scan
-    Wallet ->> AccountConsole: Scan QR
-    AccountConsole -->> Wallet: Credential Offer Uri + Authorization Code
-    Wallet ->> OpendID-Configurations-Endpoint: Get OpenID-Config /.well-known/openid-configuration
-    OpendID-Configurations-Endpoint -->> Wallet: OpenID-Configuration
-    Wallet ->> Token-Endpoint: Get AccessToken(using the Authz-Code) /token
-    Token-Endpoint -->> Wallet: AccessToken
-    Wallet ->> Credential-Endpoint: Get Credential(using the AccessToken) /credential
-    Credential-Endpoint -->> Wallet: The Credential
-```
+## Selective Disclosure: SD-JWT
+All emerging SSI standards are including selective disclosure as a core feature to address privacy. Selective disclosure is an essential requirement in the eIDAS2.0 directive of the EU. 
 
-Additional detail from diagram author:
+For the purpose of the work, [SD-JWT VC](https://www.ietf.org/archive/id/draft-terbu-oauth-sd-jwt-vc-00.html#name-verifiable-credentials-base) defines a mechanism for selective disclosure of individual elements of a JSON object used as the payload of a JSON Web Signature (JWS) structure.
 
-* The flow is using the "Cross-Device Flow"(e.g. Wallet is on a different device than the browser showing the Account Console). 
-* Binding the credential to holder-proof is also not yet provided.
+**Index Sites**
+* A collection of implementations can be found in the [IETF OAuth Working Group - SD-JWT](https://github.com/oauth-wg/oauth-selective-disclosure-jwt).
+* A couple of repositories at the [open wallet foundation](https://github.com/orgs/openwallet-foundation-labs/repositories?q=sd-jwt) are also addressing the topic. We have no java implementation there yet.
 
-As the diagram illustrates, implementation into Keycloak brings following modifications:
+**Other Sites**
+* This [waltid kotlin implementation](https://github.com/walt-id/waltid-sd-jwt) was archived and is being redesigned
+* This is a [Java Implementation from Authlete](https://github.com/authlete/sd-jwt).
 
-### Account Frontend
+**ToDo: SD-JWT lib**
+For the purpose of this work, we will have to decide on how to setup and implement (or select and use) an SD-JWT library that corelates with the governance model of keycloak components.
 
-The modification of the account console to allow for the enrolment of the user wallet.
+## Credential Format: SD-JWT-VC
+[SD-JWT-based Verifiable Credentials](https://www.ietf.org/archive/id/draft-terbu-oauth-sd-jwt-vc-00.html) describes data formats as well as validation and processing rules to express Verifiable Credentials with JSON payloads based on the Selective Disclosure for JWTs (SD-JWT)
 
-**To-Do**
-* [] Does this lead to the production of any sort of Client Attestation.
+**Index Sites**
+As for existing implementations, a pure context free implementation of SD-JWT VC is not to be found in public repositories.
 
-### Types Endpoint
+**ToDo: SD-JWT-VC lib**
+For the purpose of this work, we will have to decide on how to setup and implement an SD-JWT-VC library that corelates with the governance model of keycloak components.
 
-**To-Do**
+## Credential Format: VCDM
+There is a lot of implementation out there with the [VCDM]((https://www.w3.org/TR/vc-data-model/)) credential format. But many technical implementation have run into complexity trying to implement selective disclosure on top of VCDM.
 
-* [] Describe purpose of the Types Endpoint
+**ToDo: VCDM Support**
+In this work, we will have to discuss on wether VCDM is to be supported, and if yes, if the VCDM support will include any type of selective disclosure (annoncred, ...). We will also be discussing on the need to include this part and the existance of stake holders. For the time beeing, eIDAS2.0 is leading toward SD-JWT and ISO mDLs.
 
-### Credential Offer Endpoint
+## Credential Format: mDLs - ISO/IEC 18013-5:2021
+[IDO mDL](https://www.iso.org/standard/69084.html) defines the technical specifications for implementing a driving licence on a mobile device. It's essentially a blueprint for creating "mobile driving licences" (mDLs) that function securely and consistently across different platforms.
 
-See Credential Offer Endpoint in [OID4VCI](https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html#section-11.2)
+This technology is being prototyped in many US states and is also included into the list of format supported by the eIDAS2.0 directive.
 
-**To-Do**
+mDLs also provides selective disclosure.
 
-* [] What type of credential will be natively offered by Keycloak?
-* [] Are we planing to provide some sort of generic model based on the current KC user and role data model?
-* [] Do we want to design something like a CredentialOfferProvider to allow for plugable credential models?
+**Index Sites**
 
-### OAuth 2.0 Authorization Server Metadata
+* The [Open Wallet Foundation - Identity Credential](https://github.com/openwallet-foundation-labs/identity-credential) is a repository of Java libraries addressing different aspects of ISO mDLs.
 
-This interface will be extended to add: pre-authorized_grant_anonymous_access_supported=true|false
+**Other Sites**
 
-### Credential Endpoint.
-Whereby it is open to check if it does not make sense to have Token Endpoind directly produce the VC.
+* This [Waltid kotlin implementation](https://github.com/walt-id/waltid-mdoc) was archived and is being redesigned
+* This is a [Java Implementation from Authlete](https://github.com/authlete/cbor).
 
-## Step-1-b: Keycloak Issuer - Authorization Code Flow
+**ToDo: SD-JWT lib**
+For the purpose of this work, we will have to decide on how to setup and implement (or select and use) an mdoc library that corelates with the governance model of keycloak components.
 
-In this use case, the user's wallet serves as a client, utilizing the OIDC authorization code flow to facilitate user authentication and enable the wallet to request a token from Keycloak's token endpoint. The token provided by Keycloak can then be:
+# Cryptographic Work
 
-* A typical access token that can subsequently be used by the wallet to obtain the VCs from a separate credential issuer endpoint, or
-* The VCs themselves, assuming we agree to configure Keycloak's token endpoint to return a different token format.
+## Signature Types
 
-The following diagram from [Francis](https://github.com/francis-pouatcha) in the issue [OID4VC#17616](https://github.com/keycloak/keycloak/discussions/17616?sort=new#discussioncomment-7326341) displays components involved in the production of the VCs.
+**Purpose**
 
-```mermaid
-sequenceDiagram
-Actor User
-participant Wallet
-box Keycloak
-participant CME as Credential Metadata<br/>Endpoint
-participant AME as Authorization Matadata<br/>Endpoint
-participant PARE as PAR<br/>Endpoint
-participant DCR as DCR<br/>Endpoint
-participant AZE as Authorization<br/>Endpoint
-participant TE as Token<br/>Endpoint
-participant CE as Credential<br/>Endpoint
-end
-User ->> Wallet: interacts
-Wallet ->> CME: (1) Obtains Credential Issuer metadata <br>/.well-known/openid-credential-issuer
-Note right of Wallet: 10.2 New endpoint<br/>do we need /issuer? see 10.2.1
-CME -->> Wallet : Credential issuer metadata
-Note right of Wallet: <br/>credential_issuer:<br/>authorization_server:<br/>credential_endpoint:<br/>batch_credential_endpoint:<br/>
-Wallet ->> AME: (1) Obtains Authorization Server metadata <br>/.well-known/openid-configuration
-AME -->> Wallet: Auth server metadata
-Wallet ->> Wallet: create wallet attestation
-Note right of Wallet: Self signed attestation<br/>GAIN PoC stage 1
-Wallet ->> DCR: Register Wallet(Wallet Attestation)<br/>Endpoint: auth_server_metadata:registration_endpoint<br/>GAIN: https://datatracker.ietf.org/doc/html/draft-ietf-oauth-attestation-based-client-auth-00
-Note left of DCR: Configured KC to<br/>consume self signed<br/>attestations
-DCR -->> Wallet: Wallet Client Credentials
-Wallet ->> Wallet : Construct RAR
-Note over Wallet : RAR type openid_credential<br/>[single|batch]<br/>credential=true<br/>all VC|token info
-Wallet ->> PARE: Post PAR<br/>attestation-based-client-auth
-Note left of PARE: Configured KC to<br/>consume self signed<br/>attestations
-PARE-->>Wallet: request_uri
-Wallet->>AZE: Authorization Request
-AZE ->> AZE: Authorize User
-Note right of AZE: evtl. with consent
-AZE-->>Wallet: Authorization Response (code)
-Wallet->>TE: Token Request (code)
-Note left of TE: Configured KC to<br/>consume self signed<br/>attestations
-TE-->>Wallet: Token Response
-Note right of Wallet: Token might be a<br/>verifiable credential
-Wallet ->> CE: Get Credential(using the AccessToken) /credential
-CE -->> Wallet: Credentials
-```
+Digital signature is used in following area of the OID4VC:
+* For Credential Issuance: An verifiable credential is allways signed by it issuer.
+* For Credential Presentation, when key binding is included in the presented VC. 
+ 
+**SD-JWT-VC and/or mDLs**
 
-The key element of concern here is the Client Attestation. The Keycloak client registration interface wil have to be extended to support some sort of client attestations, which are consumable both by Keycloak and eventually by external credential issuers that rely on Keycloak for the authentication of the wallet.
+* Signature Type: ES256 (both for JOSE and COSE)
 
-From the diagram, we have following resulting todos:
+**ToDo: Keycloak Integration**
 
-### Credential Issuer Metadata Endpoint
+For the purpose of this work, we will have be:
+* Analyzing how to reuse the ES256 crypto implementation libraries allready available in keycloak for the production and verification of signatures.
+* Design **Credential Format** and **Selective Disclosure** libs, such as to have them share tose libs already in use by keycloak.
 
-The Credential Issuer Metadata is specified [here](https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html#section-10.2.2).
+## Expression of key Binding
+In case the issuer wants to binds the verifiable credential to a key controlled by the holder, this key (or a reference thereof) must be included into the produced credential. For the purpose of interoperability, implementations will have to decide on where and how to proceed.
 
-### OAuth 2.0 Authorization Server Metadata
+**SD-JWT-VC and/or mDLs**
 
-This interface will be extended to add: pre-authorized_grant_anonymous_access_supported=true|false
+* For the GAIN/HAIP POCs, we will be expecting the key to be a jwk in the cnf claim of the JWT, or
+* In the common base profile in negotiation, it can be a kid (with did:jwk) in the cnf claim of the JWT.
 
-### Client Registration Endpoint (DCR)
+## Issuer Key Resolution / Validation
+A party validating a VC or VP has to be able to retrieve and validate the key used by the issuer to produce the presentation. For this reason, we need to define how to embed or reference the issuer key in the VC.
 
-**To-Do**
+* For the GAIN/HAIP POCs, we are looking at:
+    * jwt-issuer specification from the OIDF.
+    * X509 certificate chains (e.g x5t)
+* For  the baseline profile in negotiation, did:web and jwt-issuer will both be supported.
 
-* [] Missing clear instruction on how to proceed with the registration of the wallet.
-
-### RAR Support
-
-**To-Do**
-
-* [] Need details on how to proceed with RAR
-
-### Attestation Based Client Auth
-
-See: https://datatracker.ietf.org/doc/html/draft-ietf-oauth-attestation-based-client-auth-00
-
-**To-Do**
-
-* [] Design Keycloak extension to support this.
-
-### Credential Endpoint
-
-See [Credential Endpoint](https://vcstuff.github.io/oid4vc-haip-sd-jwt-vc/draft-oid4vc-haip-sd-jwt-vc.html#section-4.4)
-
-# Additional Resources
-
-## Working Sessions
-
-Video of [OAuth SIG Breakout Session of 10.19.2023](https://us06web.zoom.us/rec/share/tMnMD-dZqHCNktddGwxQf_ICsR3ImUGNHV3jlAyN0fhli3URSZ2u0I1AtNxWdB5F.tt0iRKaP8wiNap34)
-
-## Interoperability Matrix
-
-The following table displays some competing initiatives, all implementing OID4VC. This table is managed by GAIN PoC working group at [OID4VC Profiles](https://docs.google.com/spreadsheets/d/1s6REK5eNAb3GSElID0J02_TtbuI2Exd9z-CLdLx0emk/edit?usp=sharing).
-
-There is a attempt to define a baseline profile, that will be supported by all initiatives.
-
-|                                   | [DIF Presentation & Issuance Profile](https://identity.foundation/jwt-vc-presentation-profile/) | [DIIP](https://dutchblockchaincoalition.org/en/bouwstenen-2/diip-2) | Baseline Profile Proposal | [HAIP](https://vcstuff.github.io/oid4vc-haip-sd-jwt-vc/draft-oid4vc-haip-sd-jwt-vc.html) | [EBSI](https://api-pilot.ebsi.eu/docs/ct/verifiable-credential-issuance-guidelines-v3) |
-|-----------------------------------|:-----------------------------------:|:----:|:-------------------------:|:----:|:----:|
-| OID4VP                             | x                                   | x    | x                         | x    | x    |
-| OID4VCI                            | x                                   | x    | x                         | x    | x    |
-| SIOP v2                            | x                                   | x    | ?                         | x    | x    |
-| Credential Format                  | JWT VC                              | JWT VC | SD-JWT VC                | SD-JWT VC | JWT VC |
-| Credential Format Details         |                                     |      |                           |      |      |
-| key binding                        | did:jwk                             | did:jwk | cnf with jwk or kid (with did:jwk) | jwk in cnf | |
-| issuer keys                        | did:web                             | did:web | did:web or jwt-issuer   | jwt-issuer and x509 | |
-| Signature types                    | "ES256K, EdDSA/Ed25519"             | ES256 | ES256                     | ES256 | |
-| compact serialization              | x                                   | x    | x                         | x    | |
-| JSON serialization                 |                                     |      |                           | o    |     |
-| revocation method                  | StatusList 2021                     | StatusList 2021 | JWT statuslist (with 1 bit status) | JWT statuslist | |
-| link domain verification           | x                                   |      |                           |      | |
-| OID4VCI details                    |                                     |      |                           |      | |
-| pre-authz                          |                                     |      | p                         | x    | |
-| authz code (credential offer)      |                                     |      |                           | x    | |
-| authz code (wallet initiated)      |                                     |      |                           | x    | |
-| PAR                                |                                     |      |                           | x    | |
-| scope                              |                                     |      | p                         | x    | |
-| authorization_details              |                                     |      |                           |      | |
-| Wallet Attestation JWT scheme      |                                     |      |                           | x    | |
-| dpop                               |                                     |      |                           | x    | |
-| refresh tokens                     |                                     |      |                           | x    | |
-| credential endpoint                |                                     |      | p                         | x    | |
-| deferred credential endpoint       |                                     |      |                           | x    | |
-| deferred authorization             |                                     |      |                           | x    | |
-| OID4VP details                     |                                     |      |                           |      | |
-| custom scheme                      | openid-vc                           |      | openid-baseline            | haip | |
-| vp_token                           |                                     |      | p                         |      | |
-| direct_post                        |                                     |      | p                         | x    | |
-| direct_post with redirect_uri      |                                     |      | p                         | x    | |
-| query encoded parameters           |                                     |      |                           |      | |
-| request_uri                        |                                     |      | p                         | x    | |
-| client id scheme x509_san_dns      |                                     |      | p                         | x    | |
-| client id scheme verifier_attestation |                                |      |                           | x    | |
-| scope                              |                                     |      |                           |      | |
-| presentation_definition            |                                     |      | p                         | x    | |
-| reduced PE feature set             |                                     |      | p                         | x    | |
-| asynchronous message delivery (to the wallet) |                         |      | data passed in the issuance request | | |
+In matter of trust anchors, we might endup having some static list of x509 root certificates (incl. eIDAS Certificates) or even using OpenId Federation like described in these [slides from our coleague Giuseppe](https://docs.google.com/presentation/d/13FvGbd-pxoKw4VMCrdjOE8MlGLAs6m04eRPHc0N_kRM/edit#slide=id.p). But nothing is decide yet and most POC will be run with peer Issuer Key exchanges.
 
