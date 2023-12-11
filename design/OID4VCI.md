@@ -6,6 +6,8 @@
 * **JIRA**: None
 * **Discussion**: [OpenID for Verifiable Credential Issuance #17616](https://github.com/keycloak/keycloak/discussions/17616?sort=new)
 
+NOTE: These are notes as mentioned in the "Status" field above and hence it is not set in stone if all the mentioned things will be implemented and/of
+if they are implemented exactly in a way mentioned here.
 
 ## Motivation
 OpenID Verifiable Credential Issuance ([OID4VC](https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html)) has been discussed a lot in the Self-Soverin Identity (SSI) especially due to European Commission having released a [Framework](https://digital-strategy.ec.europa.eu/en/library/european-digital-identity-wallet-architecture-and-reference-framework) for eIDASv2. The later tends to chose OID4VC as a protocol to issue Verifiable Credential (VC) and to present Verifiable Presentation (VP).
