@@ -42,6 +42,9 @@ Specifications
 
 #### [OAuth 2.0 Form Post Response Mode](https://openid.net/specs/oauth-v2-form-post-response-mode-1_0.html)
 
+#### [OAuth 2.0 Authorization Server Issuer Identification (RFC 9207)](https://datatracker.ietf.org/doc/html/rfc9207)
+
+#### [OAuth 2.0 Demonstrating Proof of Possession (DPoP) (RFC 9449)](https://datatracker.ietf.org/doc/html/rfc9449)
 
 ### Financial-grade API
 
@@ -53,6 +56,9 @@ Specifications
 
 #### [Financial-grade API: Client Initiated Backchannel Authentication Profile](https://openid.net/specs/openid-financial-api-ciba.html) (Draft)
 
+#### [FAPI 2.0 Security Profile](https://openid.net/specs/fapi-2_0-security-profile-ID2.html) (Draft)
+
+#### [FAPI 2.0 Message Signing](https://openid.bitbucket.io/fapi/fapi-2_0-message-signing.html) (Draft)
 
 ### Misc
 
