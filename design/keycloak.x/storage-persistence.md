@@ -66,7 +66,7 @@ This proposal is about the following strategy:
 
 1. The store can read objects from the oldest ones to the current version
 2. The store can read objects from the version following the current one
-3. Objects are only updated when written to.
+3. The schema version of objects in the store is only updated when written and will be written with the current version
 4. Number of schema changes should be kept at absolute minimum
 5. Schema changes can be postponed and run at chosen time
    (even if that means running a degraded service)
@@ -134,6 +134,11 @@ For each of the entities (realm, user, client etc.),
 the _current store version_ is the entity schema version that
 the store uses for writing objects.
 
+This is done even if the data has been read from a version following the current one,
+thereby downgrading the version on that object.
+This enables writable data on all nodes during zero downtime upgrades and on rollbacks
+and ensures that the data is migrated again once it is read by the next version.
+
 Conditions for the readability of an object stored by store of version _N_
 are as follows:
 
@@ -149,11 +154,19 @@ are as follows:
    by newer version. It also provides means to revert to
    the previous version if anything goes wrong.
 
+   As nodes reading the object might also update and write it to the store
+   with their version _N-1_, no information must be lost that was present in version _N_.
+
 3. _Extended forward compatibility_ (optional).
    Object stored by store of version _N_ MAY be readable by much older store,
    i.e. store of version _M_ where _M ≤ N-2_, but the store MUST
    throw an `IllegalArgumentException` if the object cannot
    be reliably reconstructed from the stored data.
+
+   As nodes reading the object might also update and write it to the store
+   with their version, no information must be lost that was present in version _N_.
+   If the object cannot be reliably written the store MUST
+   throw an `IllegalArgumentException`. 
 
 The following matrix illustrates the above conditions. It shows whether
 an object stored in version _X_ in a store of version _Y_ is readable
