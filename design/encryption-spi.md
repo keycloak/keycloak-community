@@ -164,3 +164,49 @@ When disabled there is no impact on the existing functionality of Keycloak or th
 > Local provider would require relatively complicated new functionality Keycloak, including managing encryption keys and algorithms.
 > HashiCorp Vault Transit secrets engine could be good candidate for implementation, as it is able to manage encryption keys and supports various encryption algorithms.
 > The REST API is relatively simple to use directly, without adding full blown Vault SDK client library.
+
+
+## Comparison to other solutions
+
+### Data partition encryption
+
+Data partition encryption is managed by the operating system, either at the file system level or the block device level.
+This approach is transparent to both Keycloak and the database, which do not need to be aware of the encryption.
+
+However, there are some drawbacks:
+
+* Administrators may not have control over whether the underlying file system supports encryption.
+* Once the partition is mounted, the data is accessible in plaintext.
+  Therefore, it mitigates threats such as the theft of the physical storage device, but does not protect against threats where the attacker has access to the running operating system, can execute SQL queries, or access exported database backups.
+
+Due to these limitations, users may prefer to implement encryption by other means.
+
+
+### Database level encryption
+
+Certain databases offer transparent data encryption (TDE), which encrypts data before writing it to disk and decrypts it when reading it back.
+
+The status of TDE support in open-source databases is as follows:
+
+* PostgreSQL does not support TDE.
+  There has been long-standing [discussion]((https://wiki.postgresql.org/wiki/Transparent_Data_Encryption)) in community.
+  The latest effort is by Percona who is [developing](https://www.percona.com/blog/the-making-of-an-open-source-postgresql-tde-extension/) a [TDE extension](https://github.com/Percona-Lab/postgresql-tde) for PostgreSQL.
+* MariaDB supports [Transparent data encryption](https://mariadb.com/kb/en/data-at-rest-encryption-overview/) with some [limitations](https://mariadb.com/kb/en/data-at-rest-encryption-overview/#limitations).
+
+TDE mitigates threats like the theft of the physical storage device but does not protect against threats where the attacker can execute SQL queries.
+Implementation-specific limitations exist e.g. regarding which parts of the data are encrypted and how backup utilities interact with TDE.
+
+
+### SQL extensions for encryption
+
+Databases may provide extensions to the SQL language that allow encryption and decryption of data while executing SQL queries.
+These are not transparent to the application, as the application must explicitly include the function calls in the SQL queries.
+
+Although it is theoretically possible to build an encryption solution using low-level SQL encryption primitives, creating a production-ready solution with features like key rotation would be challenging.
+Achieving good performance could be difficult due to the need to include the encryption key in the query.
+Additionally, the solution would be database-specific, requiring modifications to Keycloak to generate SQL queries tailored to each database.
+
+Example of SQL extensions include:
+
+* PostgreSQL [PGCrypto](https://www.postgresql.org/docs/current/pgcrypto.html) extension.
+* MariaDB [AES_ENCRYPT and AES_DECRYPT](https://mariadb.com/kb/en/aes_encrypt/) functions.
