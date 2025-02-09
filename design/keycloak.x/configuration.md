@@ -563,6 +563,89 @@ Examples of commands are:
 Commands may support additional options to change how they are executed and behavior. For that, commands should provide the
 help and usage messages to document how they can be used as well as the different options they support. 
 
+### The `provider` command
+
+The `provider` command provides utilities to query, (un)install, and enable/disable providers. The usage of this command is the following:
+
+```
+kc.[sh|bat] spi [list-spi|list] [
+```
+
+By running `kc.[sh|bat] provider`, the CLI should list all installed providers:
+
+```
+Listing installed providers (see --help for more options):
+
+hostname
+        Default: default
+        Provider (name: default, factory: class org.keycloak.url.DefaultHostnameProviderFactory)
+
+localeSelector
+        Default: default
+        Provider (name: default, factory: class org.keycloak.locale.DefaultLocaleSelectorProviderFactory)
+
+localeUpdater
+        Default: default
+        Provider (name: default, factory: class org.keycloak.locale.DefaultLocaleUpdaterProviderFactory)
+
+To get more information, including the complete list of providers for a SPI, append `--full` to your command line.
+
+To get information about providers for a specific SPI, append `--spi <spi>` to your command line.
+```
+
+To get more information about each SPI, it should be possible to run `kc.[sh|bat] list-spi`: 
+
+```
+Listing available SPI (see --help for more options)
+
+role
+
+loginFailure
+
+userCache SPI
+
+cekmanagement SPI
+
+To get more information, append `--full` to your command line.
+```
+
+When running `list-spi` with the `--full` option, more details are displayed as follows:
+
+```
+localeUpdater
+ Factory: interface org.keycloak.locale.LocaleUpdaterProviderFactory
+ Interface: interface org.keycloak.locale.LocaleUpdaterProvider
+ Enabled: true
+
+storage
+ Factory: interface org.keycloak.storage.UserStorageProviderFactory
+ Interface: interface org.keycloak.storage.UserStorageProvider
+ Enabled: true
+
+themeSelector
+ Factory: interface org.keycloak.theme.ThemeSelectorProviderFactory
+ Interface: interface org.keycloak.theme.ThemeSelectorProvider
+ Enabled: true
+```
+
+In order to obtain details about providers for a specific SPI, it should be possible to run `kc.[sh|bat] provider --spi cekmanagement --full`:
+
+```
+Current providers installed for "cekmanagement" SPI:
+
+Default: undefined
+Provider (name: RSA-OAEP, factory: class org.keycloak.crypto.RsaesOaepCekManagementProviderFactory)
+Provider (name: RSA-OAEP-256, factory: class org.keycloak.crypto.RsaesOaep256CekManagementProviderFactory)
+Provider (name: RSA1_5, factory: class org.keycloak.crypto.RsaesPkcs1CekManagementProviderFactory)
+```
+
+The `provider` command should provide the following sub-commands:
+
+* `enable`, to enabled providers
+* `disable`, to disabled providers
+* 'install', to install a provider
+* 'uninstall', to install a provider
+
 ## Documentation
 
 All options and commands should be documented properly to make it easy for users to discover what can be configured and which actions can be performed. This 
